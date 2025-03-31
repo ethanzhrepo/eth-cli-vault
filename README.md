@@ -44,6 +44,7 @@ Always keep multiple backups of your encrypted wallet files and ensure you never
 - AES-256-GCM encryption with Argon2id key derivation
 - Cloud storage support via OAuth (Google Drive, Dropbox, OneDrive, AWS S3)
 - Local wallet storage option
+- **No server component** - all OAuth token exchanges, cloud storage connections, and authorization processes happen solely on your local machine without any external server involvement. This program is fully client-side and will never have any server component.
 
 ## Installation
 
@@ -150,6 +151,11 @@ When creating a wallet:
 
 # Get wallet address with additional options
 ./eth-cli get --input google --name myWallet --show-mnemonics --show-private-key
+
+# Copy wallet between storage providers
+./eth-cli copy --from google --to /path/to/local/backup.json --name myWallet
+./eth-cli copy --from google --to dropbox --name myWallet
+./eth-cli copy --from /path/to/wallet.json --to google
 ```
 
 ## Getting Gas Price

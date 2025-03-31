@@ -40,6 +40,7 @@
 - 使用 Argon2id 密钥派生的 AES-256-GCM 加密
 - 通过 OAuth 支持云存储（Google Drive、Dropbox、OneDrive、AWS S3）
 - 本地钱包存储选项
+- **无服务器组件** - 所有 OAuth 令牌交换、云存储对接和授权过程完全在您的本地计算机上进行，不涉及任何外部服务器。该程序完全是客户端的，将来也不会有任何服务器组件。
 
 ## 安装
 
@@ -146,6 +147,11 @@ export AWS_S3_BUCKET="your-bucket-name"
 
 # 获取钱包地址及其他选项
 ./eth-cli get --input google --name myWallet --show-mnemonics --show-private-key
+
+# 在存储提供商之间复制钱包
+./eth-cli copy --from google --to /path/to/local/backup.json --name myWallet
+./eth-cli copy --from google --to dropbox --name myWallet
+./eth-cli copy --from /path/to/wallet.json --to google
 ```
 
 ## 获取 Gas 价格
