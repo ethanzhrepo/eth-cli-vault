@@ -147,6 +147,20 @@
             margin-top: 0.5rem;
             font-weight: bold;
         }
+        .privacy-notice {
+            background-color: #e8eaf6;
+            padding: 2rem 0;
+            text-align: center;
+        }
+        .privacy-notice h2 {
+            color: #1a237e;
+            margin-bottom: 1rem;
+        }
+        .privacy-notice p {
+            max-width: 800px;
+            margin: 0 auto;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -158,8 +172,16 @@
 
     <section class="hero">
         <div class="container">
-            <h1>Ethereum CLI Vault</h1>
-            <p>A secure and encrypted vault for Ethereum keys with seamless cloud storage integration.</p>
+            <h1>Ethereum CLI Wallet</h1>
+            <p>A secure and encrypted wallet for Ethereum with seamless cloud storage integration - completely client-side with no server component.</p>
+        </div>
+    </section>
+
+    <section class="privacy-notice">
+        <div class="container">
+            <h2>100% Client-Side Security</h2>
+            <p><strong>No server component, ever.</strong> All OAuth token exchanges, cloud storage connections, and authorization processes happen solely on your local machine.</p>
+            <p>This program is fully client-side and will never have any server component. Your private keys never leave your device - only encrypted data is stored in the cloud.</p>
         </div>
     </section>
 
@@ -169,39 +191,42 @@
             <div class="feature-grid">
                 <div class="feature-item">
                     <h3>Military-Grade Encryption</h3>
-                    <p>Protect your Ethereum keys with AES-256 encryption, ensuring your assets remain secure even if your device is compromised.</p>
+                    <p>Protect your Ethereum keys with AES-256-GCM encryption and Argon2id key derivation, ensuring your assets remain secure even if your device is compromised.</p>
                 </div>
                 <div class="feature-item">
                     <h3>Cloud Storage Integration</h3>
-                    <p>Seamlessly backup your encrypted vaults to Dropbox, Google Drive, and other cloud providers for secure off-device storage.</p>
+                    <p>Seamlessly backup your encrypted wallets to Google Drive, Dropbox, OneDrive, and AWS S3 for secure off-device storage with no intermediary servers.</p>
                 </div>
                 <div class="feature-item">
-                    <h3>Automated Sync</h3>
-                    <p>Keep your vault synchronized across devices with automatic cloud synchronization while maintaining end-to-end encryption.</p>
+                    <h3>BIP39 Support</h3>
+                    <p>Generate secure 24-word BIP39 mnemonic phrases with optional passphrase support for maximum security.</p>
                 </div>
                 <div class="feature-item">
-                    <h3>Multi-Device Support</h3>
-                    <p>Access your encrypted Ethereum vault from multiple devices without compromising security.</p>
+                    <h3>Multi-Provider Support</h3>
+                    <p>Copy your encrypted wallets between multiple storage providers for redundancy without compromising security.</p>
                 </div>
                 <div class="feature-item">
-                    <h3>Secure Key Recovery</h3>
-                    <p>Recover your keys using secure backup mechanisms without exposing sensitive information.</p>
+                    <h3>ERC20 & ERC721 Support</h3>
+                    <p>Send, receive, and approve ERC20 tokens and ERC721 NFTs with comprehensive transaction support.</p>
                 </div>
                 <div class="feature-item">
                     <h3>Zero-Knowledge Architecture</h3>
-                    <p>Your encryption keys never leave your device - only encrypted data is stored in the cloud.</p>
+                    <p>Your encryption keys and passphrases never leave your device - only encrypted data is stored in the cloud.</p>
                 </div>
             </div>
             
             <div class="cloud-providers">
                 <div class="cloud-provider">
-                    <p>Dropbox</p>
-                </div>
-                <div class="cloud-provider">
                     <p>Google Drive</p>
                 </div>
                 <div class="cloud-provider">
+                    <p>Dropbox</p>
+                </div>
+                <div class="cloud-provider">
                     <p>OneDrive</p>
+                </div>
+                <div class="cloud-provider">
+                    <p>AWS S3</p>
                 </div>
             </div>
         </div>
@@ -212,29 +237,34 @@
             <h2>Available Commands</h2>
             <div class="command-list">
                 <div class="command-item">
-                    <h3>Create Vault</h3>
-                    <p>Create a new encrypted Ethereum key vault with a strong master password.</p>
-                    <div class="code">eth-cli create-vault --name [VAULT_NAME]</div>
+                    <h3>Create Wallet</h3>
+                    <p>Create a new encrypted Ethereum wallet with BIP39 mnemonic and optional passphrase.</p>
+                    <div class="code">eth-cli create --output google,onedrive,dropbox --name myWallet</div>
                 </div>
                 <div class="command-item">
-                    <h3>Configure Cloud Storage</h3>
-                    <p>Connect your vault to cloud storage providers for secure backups.</p>
-                    <div class="code">eth-cli config --cloud [PROVIDER] --auth</div>
+                    <h3>Get Wallet Address</h3>
+                    <p>Retrieve the Ethereum address from your wallet.</p>
+                    <div class="code">eth-cli get --input google --name myWallet</div>
                 </div>
                 <div class="command-item">
-                    <h3>Backup Vault</h3>
-                    <p>Manually trigger a vault backup to configured cloud storage.</p>
-                    <div class="code">eth-cli backup --vault [VAULT_NAME]</div>
+                    <h3>Copy Wallet</h3>
+                    <p>Copy your wallet between different storage providers.</p>
+                    <div class="code">eth-cli copy --from google --to dropbox --name myWallet</div>
                 </div>
                 <div class="command-item">
-                    <h3>Restore Vault</h3>
-                    <p>Restore your encrypted vault from cloud storage.</p>
-                    <div class="code">eth-cli restore --from [PROVIDER] --vault [VAULT_NAME]</div>
+                    <h3>List Wallets</h3>
+                    <p>List all wallets in a storage provider.</p>
+                    <div class="code">eth-cli list --input google</div>
                 </div>
                 <div class="command-item">
-                    <h3>Verify Vault Integrity</h3>
-                    <p>Check the integrity and security of your vault.</p>
-                    <div class="code">eth-cli verify --vault [VAULT_NAME]</div>
+                    <h3>Transfer ETH</h3>
+                    <p>Send ETH to another address.</p>
+                    <div class="code">eth-cli transfer --amount 1.0eth --to 0xAddress --provider google --name myWallet</div>
+                </div>
+                <div class="command-item">
+                    <h3>Transfer Tokens</h3>
+                    <p>Send ERC20 tokens or NFTs.</p>
+                    <div class="code">eth-cli transferERC20 --amount 100 --to 0xAddress --token 0xTokenAddress --provider google --name myWallet</div>
                 </div>
             </div>
         </div>
@@ -242,15 +272,15 @@
 
     <section class="cta">
         <div class="container">
-            <h2>Secure Your Ethereum Keys Today</h2>
-            <p>Experience the most secure way to store and manage your Ethereum keys with cloud redundancy.</p>
+            <h2>Secure Your Ethereum Assets Today</h2>
+            <p>Experience the most secure way to store and manage your Ethereum keys with cloud redundancy and client-side encryption.</p>
             <a href="https://github.com/ethanzhrepo/eth-cli-vault" class="btn">View on GitHub</a>
         </div>
     </section>
 
     <footer>
         <div class="container">
-            <p>&copy; 2024 Ethereum CLI Vault. All rights reserved.</p>
+            <p>&copy; 2024 Ethereum CLI Wallet. All rights reserved.</p>
         </div>
     </footer>
 </body>
