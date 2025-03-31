@@ -3,7 +3,7 @@
 A secure command-line wallet for Ethereum that supports multiple key storage providers.
 
 
-![GitHub commit activity](https://img.shields.io/github/commit-activity/w/ethanzhrepo/beaver-payment-install)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/w/ethanzhrepo/eth-cli-vault)
 ![GitHub Release](https://img.shields.io/github/v/release/ethanzhrepo/eth-cli-vault)
 ![GitHub Repo stars](https://img.shields.io/github/stars/ethanzhrepo/eth-cli-vault)
 ![GitHub License](https://img.shields.io/github/license/ethanzhrepo/eth-cli-vault)
