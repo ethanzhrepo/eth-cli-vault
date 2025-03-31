@@ -94,7 +94,9 @@ export AWS_REGION="your-region"
 export AWS_S3_BUCKET="your-bucket-name"
 ```
 
-**Note:** If you don't want to set up cloud storage credentials, you can still use the wallet with local files only. The wallet files are encrypted and can be manually uploaded to any cloud storage service of your choice. The AES encryption protects your wallet data even if stored in untrusted locations.
+**Note:** The binary installation comes with pre-configured environment variables for cloud storage services. However, if you have the ability to register your own developer accounts with these services, it's recommended to replace these with your own credentials by setting the environment variables in your system. This gives you full control over the cloud storage integration.
+
+If you don't want to set up cloud storage credentials, you can still use the wallet with local files only. The wallet files are encrypted and can be manually uploaded to any cloud storage service of your choice. The AES encryption protects your wallet data even if stored in untrusted locations.
 
 ## Configuration
 
