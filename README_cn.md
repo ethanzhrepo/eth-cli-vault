@@ -48,11 +48,11 @@
 ```bash
 # 从发布页面下载最新版本
 # macOS系统
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-wallet/releases/download/v1.0.0/eth-cli-darwin-amd64
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v1.0.0/eth-cli-darwin-amd64
 chmod +x eth-cli
 
 # Linux系统
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-wallet/releases/download/v1.0.0/eth-cli-linux-amd64
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v1.0.0/eth-cli-linux-amd64
 chmod +x eth-cli
 
 # Windows系统
@@ -63,8 +63,8 @@ chmod +x eth-cli
 
 ```bash
 # 从源代码安装
-git clone https://github.com/ethanzhrepo/eth-cli-wallet
-cd eth-cli-wallet
+git clone https://github.com/ethanzhrepo/eth-cli-vault
+cd eth-cli-vault
 go build -o eth-cli
 ```
 

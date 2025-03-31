@@ -52,11 +52,11 @@ Always keep multiple backups of your encrypted wallet files and ensure you never
 ```bash
 # Download the latest release from the releases page
 # For macOS
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-wallet/releases/download/v1.0.0/eth-cli-darwin-amd64
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v1.0.0/eth-cli-darwin-amd64
 chmod +x eth-cli
 
 # For Linux
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-wallet/releases/download/v1.0.0/eth-cli-linux-amd64
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v1.0.0/eth-cli-linux-amd64
 chmod +x eth-cli
 
 # For Windows
@@ -67,8 +67,8 @@ chmod +x eth-cli
 
 ```bash
 # Installing from source
-git clone https://github.com/ethanzhrepo/eth-cli-wallet
-cd eth-cli-wallet
+git clone https://github.com/ethanzhrepo/eth-cli-vault
+cd eth-cli-vault
 go build -o eth-cli
 ```
 
