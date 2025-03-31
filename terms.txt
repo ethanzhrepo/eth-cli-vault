@@ -52,7 +52,7 @@ These Terms shall be governed and construed in accordance with the laws of [Your
 We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we may provide notice prior to any new terms taking effect (e.g., via the Service interface or website). What constitutes a material change will be determined at our sole discretion. By continuing to access or use our Service after revisions become effective, you agree to be bound by the revised terms.
 
 11. Entire Agreement & Severability
-These Terms constitute the entire agreement between you and [eth-cli-vault] regarding the Service and supersede all prior agreements. If any provision of these Terms is held to be invalid or unenforceable, the remaining provisions will remain in effect.
+These Terms constitute the entire agreement between you and [eth-cli-vault] regarding the Service and supersede all prior agreements (except MIT LICENSE). If any provision of these Terms is held to be invalid or unenforceable, the remaining provisions will remain in effect.
 
 12. Contact Us
 If you have any questions about these Terms, please UNINSTALL the software immediately.
@@ -111,7 +111,7 @@ MIT License
 我们保留自行决定随时修改或替换本条款的权利。如果修订是实质性的，我们可能在新条款生效前提供通知（例如，通过服务界面或网站）。何为实质性变更将由我们自行决定。在修订生效后继续访问或使用我们的服务，即表示您同意受修订后条款的约束。
 
 11. 完整协议与可分割性
-本条款构成您与 [eth-cli-vault] 之间关于本服务的完整协议，并取代所有先前的协议。如果本条款的任何规定被认定为无效或不可执行，其余规定将继续有效。
+本条款构成您与 [eth-cli-vault] 之间关于本服务的完整协议，并取代所有先前的协议(MIT除外)。如果本条款的任何规定被认定为无效或不可执行，其余规定将继续有效。
 
 12. 联系我们
 如果您对本条款有任何疑问，请立即停止使用本服务。
