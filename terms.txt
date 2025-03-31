@@ -22,7 +22,7 @@ Independent Relationship: Your use of any third-party service is at your own ris
 You agree not to use the Service for any unlawful purpose or in any way that could damage, disable, overburden, or impair the Service or interfere with any other party's use and enjoyment of the Service. You agree not to attempt to gain unauthorized access to the Service, or any systems or networks connected to the Service. You agree not to reverse engineer, decompile, or disassemble the software components of the Service.
 
 4. Intellectual Property Rights
-The Service and its original content (excluding any user data), features, functionality, and software are and will remain the exclusive property of [Your Company/Service Name] and its licensors. Our trademarks and trade dress may not be used in connection with any product or service without our prior written consent.
+MIT License
 
 5. Disclaimers of Warranties
 THE SERVICE IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS, WITHOUT ANY WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, ERROR-FREE, OR FREE OF VIRUSES OR OTHER HARMFUL COMPONENTS. WE MAKE NO GUARANTEES REGARDING THE RESULTS OBTAINED FROM THE USE OF THE SERVICE OR THE ACCURACY OR RELIABILITY OF ANY INFORMATION OBTAINED THROUGH THE SERVICE.
@@ -81,7 +81,7 @@ If you have any questions about these Terms, please UNINSTALL the software immed
 您同意不为任何非法目的使用本服务，或以任何可能损害、禁用、加重负担或损害本服务或干扰任何其他方使用和享用本服务的方式使用本服务。您同意不试图未经授权访问本服务或连接到本服务的任何系统或网络。您同意不对本服务的软件组件进行逆向工程、反编译或反汇编。
 
 4. 知识产权
-本服务及其原始内容（不包括任何用户数据）、功能、特性和软件是并将继续是 [您的公司/服务名称] 及其许可方的专有财产。未经我们事先书面同意，不得将我们的商标和商业外观用于任何产品或服务。
+MIT License
 
 5. 免责声明
 本服务基于“现状”和“现有”提供，不附带任何形式的明示或默示保证，包括但不限于适销性、特定用途适用性或不侵权的默示保证。我们不保证本服务将不间断、安全、无错误或不含病毒或其他有害组件。我们对使用本服务获得的结果或通过本服务获得的任何信息的准确性或可靠性不作任何保证。
