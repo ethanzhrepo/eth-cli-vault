@@ -54,16 +54,25 @@
 
 ```bash
 # 从发布页面下载最新版本
-# macOS系统
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v1.0.0/eth-cli-darwin-amd64
+# macOS系统 (Apple Silicon)
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.0/eth-cli-0.1.0-darwin-Silicon
 chmod +x eth-cli
 
-# Linux系统
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v1.0.0/eth-cli-linux-amd64
+# macOS系统 (Intel)
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.0/eth-cli-0.1.0-darwin-intel
+chmod +x eth-cli
+
+# Linux系统 (x64/amd64)
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.0/eth-cli-0.1.0-linux-amd64
+chmod +x eth-cli
+
+# Linux系统 (arm64)
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.0/eth-cli-0.1.0-linux-arm64
 chmod +x eth-cli
 
 # Windows系统
 # 从发布页面下载并重命名为eth-cli.exe
+# https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.0/eth-cli-0.1.0-windows-amd64.exe
 ```
 
 ### 从源代码构建

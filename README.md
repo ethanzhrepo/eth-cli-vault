@@ -53,16 +53,25 @@ Always keep multiple backups of your encrypted wallet files and ensure you never
 
 ```bash
 # Download the latest release from the releases page
-# For macOS
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v1.0.0/eth-cli-darwin-amd64
+# For macOS (Apple Silicon)
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.0/eth-cli-0.1.0-darwin-Silicon
 chmod +x eth-cli
 
-# For Linux
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v1.0.0/eth-cli-linux-amd64
+# For macOS (Intel)
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.0/eth-cli-0.1.0-darwin-intel
+chmod +x eth-cli
+
+# For Linux (x64/amd64)
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.0/eth-cli-0.1.0-linux-amd64
+chmod +x eth-cli
+
+# For Linux (arm64)
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.0/eth-cli-0.1.0-linux-arm64
 chmod +x eth-cli
 
 # For Windows
 # Download from the releases page and rename to eth-cli.exe
+# https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.0/eth-cli-0.1.0-windows-amd64.exe
 ```
 
 ### Building from Source
