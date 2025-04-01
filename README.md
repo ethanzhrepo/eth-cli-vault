@@ -1,4 +1,4 @@
-# Ethereum CLI Wallet
+# Ethereum CLI Vault
 
 A secure command-line wallet for Ethereum that supports multiple key storage providers.
 
