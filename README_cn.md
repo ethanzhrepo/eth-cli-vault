@@ -82,7 +82,22 @@ chmod +x eth-cli
 # 从源代码安装
 git clone https://github.com/ethanzhrepo/eth-cli-vault
 cd eth-cli-vault
-go build -o eth-cli
+
+# 设置环境变量
+cp .env.example .env
+# 编辑.env文件添加您的云存储提供商密钥
+# nano .env 或 vim .env
+
+# 使用make构建
+make
+
+# 编译好的二进制文件将位于release目录中
+# 您可以复制适合您系统的二进制文件
+cp release/eth-cli-0.1.0-darwin-Silicon eth-cli  # 适用于macOS Apple Silicon
+# 或者
+cp release/eth-cli-0.1.0-darwin-intel eth-cli  # 适用于macOS Intel
+# 或者
+cp release/eth-cli-0.1.0-linux-amd64 eth-cli  # 适用于Linux
 ```
 
 ### 云存储的环境变量配置
