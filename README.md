@@ -14,10 +14,6 @@ A secure command-line wallet for Ethereum that supports multiple key storage pro
 <img alt="X (formerly Twitter) Follow" src="https://img.shields.io/twitter/follow/0x99_Ethan">
 </a>
 
-<p align="center">
-  <img src="./assets/logos/256.jpg" alt="Logo">
-</p>
-
 
 ## Problem Solved
 
