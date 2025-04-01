@@ -80,7 +80,22 @@ chmod +x eth-cli
 # Installing from source
 git clone https://github.com/ethanzhrepo/eth-cli-vault
 cd eth-cli-vault
-go build -o eth-cli
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env file to add your cloud storage provider keys
+# nano .env or vim .env
+
+# Build using make
+make
+
+# The compiled binaries will be in the release directory
+# You can copy the appropriate binary for your system
+cp release/eth-cli-0.1.0-darwin-Silicon eth-cli  # For macOS Apple Silicon
+# or
+cp release/eth-cli-0.1.0-darwin-intel eth-cli  # For macOS Intel
+# or
+cp release/eth-cli-0.1.0-linux-amd64 eth-cli  # For Linux
 ```
 
 ### Environment Variables for Cloud Storage
