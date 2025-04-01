@@ -46,6 +46,7 @@ Always keep multiple backups of your encrypted wallet files and ensure you never
 - Local wallet storage option
 - **No server component** - all OAuth token exchanges, cloud storage connections, and authorization processes happen solely on your local machine without any external server involvement. This program is fully client-side and will never have any server component.
 
+
 ## Installation
 
 ### Binary Installation (Simplest)
