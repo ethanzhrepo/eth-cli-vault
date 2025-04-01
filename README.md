@@ -137,6 +137,17 @@ When creating a wallet:
 
 **Important:** Both the BIP39 passphrase and AES password are critical for accessing your wallet. If lost, your assets will be permanently inaccessible due to the strong encryption algorithms used.
 
+**Password Requirements:** Both the AES password and BIP39 passphrase must include a combination of uppercase letters, lowercase letters, and numbers to ensure adequate security strength.
+
+**Encryption Strength:** This wallet uses strong encryption with the following parameters:
+- **Algorithm:** AES-256-GCM with Argon2id key derivation
+- **Memory Required:** 1048576 KB (1GB) - Makes hardware-based attacks extremely difficult
+- **Iterations:** 12 - Increases resistance to brute force attacks
+- **Parallelism:** 4 - Adds computational overhead
+- **Key Length:** 32 bytes (256 bits) - Full-strength AES-256 key
+
+This encryption configuration requires significant computational resources to attempt breaking, making it practically impossible to access your wallet without the correct passwords, even with advanced hardware.
+
 ## Managing Wallets
 
 ```bash
