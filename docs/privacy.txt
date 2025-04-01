@@ -12,7 +12,7 @@ All data processed or managed through our Service resides solely on:
 
 Your local device's storage (e.g., hard drive, SSD).
 
-Your designated third-party cloud storage accounts (e.g., Google Drive, Dropbox, OneDrive, etc.).
+Your designated third-party cloud storage accounts (e.g., Google Drive, Dropbox, Box, etc.).
 
 You are solely responsible for managing the storage and security of your data on your local devices and within your third-party cloud storage accounts.
 
@@ -50,7 +50,7 @@ If you have any questions about this Privacy Policy, please UNINSTALL this softw
 
 隐私政策
 
-本隐私政策旨在说明 [eth-cli-vault]（简称“我们”）在您使用我们的 [eth-cli-vault]（简称“服务”）时的数据处理实践。
+本隐私政策旨在说明 [eth-cli-vault]（简称"我们"）在您使用我们的 [eth-cli-vault]（简称"服务"）时的数据处理实践。
 
 1. 我方不收集任何数据
 
@@ -92,7 +92,7 @@ If you have any questions about this Privacy Policy, please UNINSTALL this softw
 
 6. 本隐私政策的变更
 
-我们可能会不时更新本隐私政策。如有重大变更，我们将在此页面上发布新的隐私政策并更新“生效日期”以通知您。您在变更后继续使用本服务即表示您接受修订后的政策。
+我们可能会不时更新本隐私政策。如有重大变更，我们将在此页面上发布新的隐私政策并更新"生效日期"以通知您。您在变更后继续使用本服务即表示您接受修订后的政策。
 
 7. 联系我们
 

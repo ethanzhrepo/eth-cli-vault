@@ -42,7 +42,7 @@ Always keep multiple backups of your encrypted wallet files and ensure you never
 - BIP39 mnemonic phrase generation (24 words)
 - Optional BIP39 passphrase support
 - AES-256-GCM encryption with Argon2id key derivation
-- Cloud storage support via OAuth (Google Drive, Dropbox, OneDrive, AWS S3)
+- Cloud storage support via OAuth (Google Drive, Dropbox, Box, AWS S3)
 - Local wallet storage option
 - **No server component** - all OAuth token exchanges, cloud storage connections, and authorization processes happen solely on your local machine without any external server involvement. This program is fully client-side and will never have any server component.
 
@@ -85,8 +85,9 @@ export GOOGLE_OAUTH_CLIENT_SECRET="your-client-secret"
 # Dropbox
 export DROPBOX_APP_KEY="your-app-key"
 
-# OneDrive
-export ONEDRIVE_CLIENT_ID="your-client-id"
+# Box
+export BOX_CLIENT_ID="your-client-id"
+export BOX_CLIENT_SECRET="your-client-secret"
 
 # AWS S3
 export AWS_ACCESS_KEY_ID="your-access-key"
@@ -119,11 +120,11 @@ If you don't want to set up cloud storage credentials, you can still use the wal
 
 ```bash
 # Save to cloud storage (without saving locally)
-./eth-cli create --output google,onedrive,dropbox --name myWallet [--force]
+./eth-cli create --output google,box,dropbox --name myWallet [--force]
 # Will save to /MyWallet/{name}.json in cloud storage
 
 # Save to cloud storage and local file
-./eth-cli create --output /path/to/save/myWallet.json,google,onedrive,dropbox --name myWallet
+./eth-cli create --output /path/to/save/myWallet.json,google,box,dropbox --name myWallet
 # Will save to cloud storage and specified local path
 
 # Save only to local file (if you don't want to use cloud storage)
@@ -153,7 +154,7 @@ This encryption configuration requires significant computational resources to at
 ```bash
 # List all wallets from a storage provider
 ./eth-cli list --input google
-./eth-cli list --input onedrive
+./eth-cli list --input box
 ./eth-cli list --input dropbox
 
 # Get wallet address
@@ -166,6 +167,7 @@ This encryption configuration requires significant computational resources to at
 # Copy wallet between storage providers
 ./eth-cli copy --from google --to /path/to/local/backup.json --name myWallet
 ./eth-cli copy --from google --to dropbox --name myWallet
+./eth-cli copy --from google --to box --name myWallet
 ./eth-cli copy --from /path/to/wallet.json --to google
 ```
 

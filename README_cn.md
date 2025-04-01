@@ -38,7 +38,7 @@
 - BIP39 助记词生成（24个单词）
 - 可选 BIP39 密码短语支持
 - 使用 Argon2id 密钥派生的 AES-256-GCM 加密
-- 通过 OAuth 支持云存储（Google Drive、Dropbox、OneDrive、AWS S3）
+- 通过 OAuth 支持云存储（Google Drive、Dropbox、Box、AWS S3）
 - 本地钱包存储选项
 - **无服务器组件** - 所有 OAuth 令牌交换、云存储对接和授权过程完全在您的本地计算机上进行，不涉及任何外部服务器。该程序完全是客户端的，将来也不会有任何服务器组件。
 
@@ -81,8 +81,9 @@ export GOOGLE_OAUTH_CLIENT_SECRET="your-client-secret"
 # Dropbox
 export DROPBOX_APP_KEY="your-app-key"
 
-# OneDrive
-export ONEDRIVE_CLIENT_ID="your-client-id"
+# Box
+export BOX_CLIENT_ID="your-client-id"
+export BOX_CLIENT_SECRET="your-client-secret"
 
 # AWS S3
 export AWS_ACCESS_KEY_ID="your-access-key"
@@ -115,11 +116,11 @@ export AWS_S3_BUCKET="your-bucket-name"
 
 ```bash
 # 存储到云端（不保存到本地）
-./eth-cli create --output google,onedrive,dropbox --name myWallet [--force]
+./eth-cli create --output google,box,dropbox --name myWallet [--force]
 # 将保存到云存储的 /MyWallet/{name}.json 中
 
 # 存储到云端和本地文件
-./eth-cli create --output /path/to/save/myWallet.json,google,onedrive,dropbox --name myWallet
+./eth-cli create --output /path/to/save/myWallet.json,google,box,dropbox --name myWallet
 # 将保存到云存储和指定的本地路径
 
 # 仅保存到本地文件（如果您不想使用云存储）
@@ -149,7 +150,7 @@ export AWS_S3_BUCKET="your-bucket-name"
 ```bash
 # 列出存储提供商中的所有钱包
 ./eth-cli list --input google
-./eth-cli list --input onedrive
+./eth-cli list --input box
 ./eth-cli list --input dropbox
 
 # 获取钱包地址
@@ -162,6 +163,7 @@ export AWS_S3_BUCKET="your-bucket-name"
 # 在存储提供商之间复制钱包
 ./eth-cli copy --from google --to /path/to/local/backup.json --name myWallet
 ./eth-cli copy --from google --to dropbox --name myWallet
+./eth-cli copy --from google --to box --name myWallet
 ./eth-cli copy --from /path/to/wallet.json --to google
 ```
 
@@ -246,3 +248,8 @@ export AWS_S3_BUCKET="your-bucket-name"
 ## 许可证
 
 [许可证信息]
+
+
+## TODO 
+
+ - [ ] 已去掉onedrive支持，增加box支持。

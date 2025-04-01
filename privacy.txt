@@ -12,7 +12,7 @@ All data processed or managed through our Service resides solely on:
 
 Your local device's storage (e.g., hard drive, SSD).
 
-Your designated third-party cloud storage accounts (e.g., Google Drive, Dropbox, OneDrive, etc.).
+Your designated third-party cloud storage accounts (e.g., Google Drive, Dropbox, Box, etc.).
 
 You are solely responsible for managing the storage and security of your data on your local devices and within your third-party cloud storage accounts.
 

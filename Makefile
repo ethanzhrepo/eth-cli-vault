@@ -10,12 +10,13 @@ LDFLAGS=-ldflags "\
 -X main.version=${VERSION} \
 -X main.googleOAuthClientID=${GOOGLE_OAUTH_CLIENT_ID} \
 -X main.googleOAuthClientSecret=${GOOGLE_OAUTH_CLIENT_SECRET} \
--X main.onedriveClientID=${ONEDRIVE_CLIENT_ID} \
 -X main.dropboxAppKey=${DROPBOX_APP_KEY} \
 -X main.awsAccessKeyID=${AWS_ACCESS_KEY_ID} \
 -X main.awsSecretAccessKey=${AWS_SECRET_ACCESS_KEY} \
 -X main.awsS3Bucket=${AWS_S3_BUCKET} \
--X main.awsRegion=${AWS_REGION}"
+-X main.awsRegion=${AWS_REGION} \
+-X main.boxClientID=${BOX_CLIENT_ID} \
+-X main.boxClientSecret=${BOX_CLIENT_SECRET}"
 
 .PHONY: all clean build-all build-macos-arm build-macos-intel build-linux-x64 build-linux-amd64 build-linux-arm64 build-windows
 
