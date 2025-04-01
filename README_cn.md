@@ -1,5 +1,7 @@
 # 以太坊命令行钱包
 
+一个安全的以太坊命令行钱包，支持多种密钥存储的命令行程序。
+
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/ethanzhrepo/eth-cli-vault)
 ![GitHub Release](https://img.shields.io/github/v/release/ethanzhrepo/eth-cli-vault)
 ![GitHub Repo stars](https://img.shields.io/github/stars/ethanzhrepo/eth-cli-vault)
@@ -9,7 +11,10 @@
 <img alt="X (formerly Twitter) Follow" src="https://img.shields.io/twitter/follow/0x99_Ethan">
 </a>
 
-一个安全的以太坊命令行钱包，支持多种密钥存储提供商。
+
+<p align="center">
+  <img src="./assets/logos/256.jpg" alt="Logo">
+</p>
 
 ## 解决场景
 
