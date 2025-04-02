@@ -1,0 +1,9 @@
+test.sh
+.env
+test_data
+test
+eth-cli
+eth-cli-wallet
+test.sh
+.DS_Store
+release
