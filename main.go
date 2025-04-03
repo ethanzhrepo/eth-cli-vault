@@ -28,7 +28,7 @@ var (
 func init() {
 	// Pass values to util package
 	util.DefaultGoogleOAuthClientID = googleOAuthClientID
-	// util.DefaultGoogleOAuthClientSecret = googleOAuthClientSecret
+	util.DefaultGoogleOAuthClientSecret = googleOAuthClientSecret
 	util.DefaultBoxClientID = boxClientID
 	util.DefaultBoxClientSecret = boxClientSecret
 	util.DefaultDropboxAppKey = dropboxAppKey
