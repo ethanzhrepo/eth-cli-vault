@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -27,6 +28,11 @@ func (f *StorageFactory) NewStorage(provider string) (Storage, error) {
 		return &S3Storage{}, nil
 	case "box":
 		return &BoxStorage{}, nil
+	case "keychain":
+		if runtime.GOOS == "darwin" {
+			return &KeychainStorage{}, nil
+		}
+		return nil, fmt.Errorf("keychain storage is only available on macOS")
 	case "local":
 		return &LocalStorage{}, nil
 	default:

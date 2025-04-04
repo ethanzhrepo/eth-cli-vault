@@ -7,4 +7,4 @@ const (
 	DEFAULT_CLOUD_FILE_NAME = "wallet.json"
 )
 
-var CLOUD_PROVIDERS = []string{"google", "dropbox", "s3", "box"}
+var CLOUD_PROVIDERS = []string{"google", "dropbox", "s3", "box", "keychain"}
