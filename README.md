@@ -44,6 +44,7 @@ Always keep multiple backups of your encrypted wallet files and ensure you never
 - AES-256-GCM encryption with Argon2id key derivation
 - Cloud storage support via OAuth (Google Drive, Dropbox, Box, AWS S3)
 - Local wallet storage option
+- **Apple Keychain storage support** - available as a storage option on macOS systems
 - **No server component** - all OAuth token exchanges, cloud storage connections, and authorization processes happen solely on your local machine without any external server involvement. This program is fully client-side and will never have any server component.
 
 
@@ -125,6 +126,8 @@ export AWS_S3_BUCKET="your-bucket-name"
 
 If you don't want to set up cloud storage credentials, you can still use the wallet with local files only. The wallet files are encrypted and can be manually uploaded to any cloud storage service of your choice. The AES encryption protects your wallet data even if stored in untrusted locations.
 
+**macOS users note:** On macOS systems, you can choose to use Apple Keychain as a storage option, which offers additional benefits of system-level security integration. Keychain storage is optional and like other cloud storage options, it needs to be explicitly specified in commands.
+
 ## Configuration
 
 ```bash
@@ -147,6 +150,10 @@ If you don't want to set up cloud storage credentials, you can still use the wal
 # Save to cloud storage (without saving locally)
 ./eth-cli create --output google,box,dropbox --name myWallet [--force]
 # Will save to /MyWallet/{name}.json in cloud storage
+
+# Use Keychain storage on macOS
+./eth-cli create --output keychain --name myWallet [--force]
+# Securely stores in system keychain
 
 # Save to cloud storage and local file
 ./eth-cli create --output /path/to/save/myWallet.json,google,box,dropbox --name myWallet
@@ -181,9 +188,11 @@ This encryption configuration requires significant computational resources to at
 ./eth-cli list --input google
 ./eth-cli list --input box
 ./eth-cli list --input dropbox
+./eth-cli list --input keychain  # macOS only
 
 # Get wallet address
 ./eth-cli get --input google --name myWallet
+./eth-cli get --input keychain --name myWallet  # macOS only
 ./eth-cli get --input /path/to/wallet.json
 
 # Get wallet address with additional options
@@ -193,6 +202,7 @@ This encryption configuration requires significant computational resources to at
 ./eth-cli copy --from google --to /path/to/local/backup.json --name myWallet
 ./eth-cli copy --from google --to dropbox --name myWallet
 ./eth-cli copy --from google --to box --name myWallet
+./eth-cli copy --from google --to keychain --name myWallet  # Copy to keychain (macOS only)
 ./eth-cli copy --from /path/to/wallet.json --to google
 ```
 

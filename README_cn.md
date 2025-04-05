@@ -41,12 +41,14 @@
 - 使用 Argon2id 密钥派生的 AES-256-GCM 加密
 - 通过 OAuth 支持云存储（Google Drive、Dropbox、Box、AWS S3）
 - 本地钱包存储选项
+- **支持 Apple 密钥链存储** - 在 macOS 系统上可选择使用系统密钥链作为存储选项
 - **无服务器组件** - 所有 OAuth 令牌交换、云存储对接和授权过程完全在您的本地计算机上进行，不涉及任何外部服务器。该程序完全是客户端的，将来也不会有任何服务器组件。
 
 
 ## TODO 
 
  - [x] 已去掉onedrive支持，增加box支持。
+ - [x] 增加Apple密钥链（Keychain）支持，作为 macOS 系统上的可选存储方式
  - [ ] 阿里云oss、百度盘支持
 
 ## 安装
@@ -127,6 +129,8 @@ export AWS_S3_BUCKET="your-bucket-name"
 
 如果您不想设置云存储凭证，仍然可以仅使用本地文件。钱包文件已经过加密，可以手动上传到任何您选择的云存储服务。AES加密可以保护您的钱包数据，即使存储在不受信任的位置。
 
+**macOS用户注意：** 在macOS系统上，您可以选择使用Apple密钥链（Keychain）作为存储选项，这提供了与系统级别安全集成的额外优势。密钥链存储是一个可选项，与其他云存储选项一样，需要在命令中明确指定。
+
 ## 配置
 
 ```bash
@@ -149,6 +153,10 @@ export AWS_S3_BUCKET="your-bucket-name"
 # 存储到云端（不保存到本地）
 ./eth-cli create --output google,box,dropbox --name myWallet [--force]
 # 将保存到云存储的 /MyWallet/{name}.json 中
+
+# 在macOS上使用密钥链存储
+./eth-cli create --output keychain --name myWallet [--force]
+# 将安全地存储在系统密钥链中
 
 # 存储到云端和本地文件
 ./eth-cli create --output /path/to/save/myWallet.json,google,box,dropbox --name myWallet
@@ -183,9 +191,11 @@ export AWS_S3_BUCKET="your-bucket-name"
 ./eth-cli list --input google
 ./eth-cli list --input box
 ./eth-cli list --input dropbox
+./eth-cli list --input keychain  # 仅macOS系统
 
 # 获取钱包地址
 ./eth-cli get --input google --name myWallet
+./eth-cli get --input keychain --name myWallet  # 仅macOS系统
 ./eth-cli get --input /path/to/wallet.json
 
 # 获取钱包地址及其他选项
@@ -195,6 +205,7 @@ export AWS_S3_BUCKET="your-bucket-name"
 ./eth-cli copy --from google --to /path/to/local/backup.json --name myWallet
 ./eth-cli copy --from google --to dropbox --name myWallet
 ./eth-cli copy --from google --to box --name myWallet
+./eth-cli copy --from google --to keychain --name myWallet  # 复制到密钥链（仅macOS系统）
 ./eth-cli copy --from /path/to/wallet.json --to google
 ```
 

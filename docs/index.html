@@ -161,6 +161,14 @@
             margin: 0 auto;
             margin-bottom: 1rem;
         }
+        .platform-feature {
+            background-color: #eceff1;
+            padding: 1rem;
+            border-radius: 4px;
+            text-align: center;
+            margin-bottom: 1rem;
+            border-left: 4px solid #3949ab;
+        }
     </style>
 </head>
 <body>
@@ -188,6 +196,10 @@
     <section class="features">
         <div class="container">
             <h2>Key Features</h2>
+            <div class="platform-feature">
+                <h3>NEW: Apple Keychain Storage Option for macOS</h3>
+                <p>On macOS systems, you can now choose to use Apple Keychain as an additional storage option, providing system-level security for your wallet data.</p>
+            </div>
             <div class="feature-grid">
                 <div class="feature-item">
                     <h3>Robust Encryption</h3>
@@ -196,6 +208,10 @@
                 <div class="feature-item">
                     <h3>Cloud Storage Integration</h3>
                     <p>Seamlessly backup your encrypted wallets to Google Drive, Dropbox, Box, and AWS S3 for secure off-device storage with no intermediary servers.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>Apple Keychain Support</h3>
+                    <p>On macOS, you can select Apple Keychain as a storage option for enhanced system-level security protection.</p>
                 </div>
                 <div class="feature-item">
                     <h3>BIP39 Support</h3>
@@ -228,6 +244,9 @@
                 <div class="cloud-provider">
                     <p>AWS S3</p>
                 </div>
+                <div class="cloud-provider">
+                    <p>Apple Keychain</p>
+                </div>
             </div>
         </div>
     </section>
@@ -240,26 +259,31 @@
                     <h3>Create Wallet</h3>
                     <p>Create a new encrypted Ethereum wallet with BIP39 mnemonic and optional passphrase.</p>
                     <div class="code">eth-cli create --output google,box,dropbox --name myWallet</div>
+                    <div class="code">eth-cli create --output keychain --name myWallet # macOS only</div>
                 </div>
                 <div class="command-item">
                     <h3>Get Wallet Address</h3>
                     <p>Retrieve the Ethereum address from your wallet.</p>
                     <div class="code">eth-cli get --input google --name myWallet</div>
+                    <div class="code">eth-cli get --input keychain --name myWallet # macOS only</div>
                 </div>
                 <div class="command-item">
                     <h3>Copy Wallet</h3>
                     <p>Copy your wallet between different storage providers.</p>
                     <div class="code">eth-cli copy --from google --to dropbox --name myWallet</div>
+                    <div class="code">eth-cli copy --from google --to keychain --name myWallet # macOS only</div>
                 </div>
                 <div class="command-item">
                     <h3>List Wallets</h3>
                     <p>List all wallets in a storage provider.</p>
                     <div class="code">eth-cli list --input google</div>
+                    <div class="code">eth-cli list --input keychain # macOS only</div>
                 </div>
                 <div class="command-item">
                     <h3>Transfer ETH</h3>
                     <p>Send ETH to another address.</p>
                     <div class="code">eth-cli transfer --amount 1.0eth --to 0xAddress --provider google --name myWallet</div>
+                    <div class="code">eth-cli transfer --amount 1.0eth --to 0xAddress --provider keychain --name myWallet # macOS only</div>
                 </div>
                 <div class="command-item">
                     <h3>Transfer Tokens</h3>
