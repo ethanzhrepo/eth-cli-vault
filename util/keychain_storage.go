@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -13,9 +14,25 @@ import (
 type KeychainStorage struct{}
 
 // Put stores data in the Apple Keychain
-func (k *KeychainStorage) Put(data []byte, filePath string) (string, error) {
+func (k *KeychainStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
 	// Extract wallet name from filepath to use as key in keychain
 	walletName := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
+
+	// Check if wallet already exists in keychain if withForce is false
+	if !withForce {
+		query := keychain.NewItem()
+		query.SetSecClass(keychain.SecClassGenericPassword)
+		query.SetService("ltd.wrb.eth-cli-vault")
+		query.SetAccount(walletName)
+		query.SetMatchLimit(keychain.MatchLimitOne)
+
+		// Try to find the item
+		results, _ := keychain.QueryItem(query)
+		if len(results) > 0 {
+			fmt.Printf("Error: Wallet already exists in Apple Keychain: %s\n", walletName)
+			os.Exit(1)
+		}
+	}
 
 	// Set up keychain item
 	item := keychain.NewItem()

@@ -70,7 +70,7 @@ type BoxResponse struct {
 }
 
 // UploadToBox uploads a file to Box
-func UploadToBox(data []byte, filePath string) (string, error) {
+func UploadToBox(data []byte, filePath string, withForce bool) (string, error) {
 	// For debugging
 	fmt.Println("Starting Box upload process...")
 
@@ -91,6 +91,75 @@ func UploadToBox(data []byte, filePath string) (string, error) {
 		return "", fmt.Errorf("failed to get parent folder ID: %v", err)
 	}
 	fmt.Printf("Parent folder ID: %s\n", parentID)
+
+	// Check if file already exists
+	fileName := filepath.Base(filePath)
+	fileExists := false
+
+	// List items in the parent folder
+	url := fmt.Sprintf("https://api.box.com/2.0/folders/%s/items", parentID)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %v", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to list items: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("failed to list items: status code %d, response: %s", resp.StatusCode, string(respBody))
+	}
+
+	var result BoxResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("failed to decode response: %v", err)
+	}
+
+	// Find matching item
+	var fileID string
+	for _, item := range result.Entries {
+		if item.Name == fileName && item.Type == "file" {
+			fileExists = true
+			fileID = item.ID
+			break
+		}
+	}
+
+	// If file exists and withForce is false, exit
+	if fileExists && !withForce {
+		fmt.Printf("Error: File already exists in Box: %s\n", filePath)
+		os.Exit(1)
+	}
+
+	// If file exists and withForce is true, delete the file
+	if fileExists && withForce {
+		deleteURL := fmt.Sprintf("https://api.box.com/2.0/files/%s", fileID)
+		deleteReq, err := http.NewRequest("DELETE", deleteURL, nil)
+		if err != nil {
+			return "", fmt.Errorf("failed to create delete request: %v", err)
+		}
+
+		deleteReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
+
+		deleteResp, err := client.Do(deleteReq)
+		if err != nil {
+			return "", fmt.Errorf("failed to delete file: %v", err)
+		}
+		defer deleteResp.Body.Close()
+
+		if deleteResp.StatusCode != http.StatusNoContent {
+			respBody, _ := io.ReadAll(deleteResp.Body)
+			return "", fmt.Errorf("failed to delete file: status code %d, response: %s", deleteResp.StatusCode, string(respBody))
+		}
+
+		fmt.Printf("Deleted existing file: %s\n", fileName)
+	}
 
 	// Create multipart form
 	body := &bytes.Buffer{}
@@ -129,10 +198,10 @@ func UploadToBox(data []byte, filePath string) (string, error) {
 
 	// Create the request
 	// Using the correct API endpoint
-	url := "https://upload.box.com/api/2.0/files/content"
+	url = "https://upload.box.com/api/2.0/files/content"
 	fmt.Printf("Using Box API endpoint: %s\n", url)
 
-	req, err := http.NewRequest("POST", url, body)
+	req, err = http.NewRequest("POST", url, body)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %v", err)
 	}
@@ -142,7 +211,7 @@ func UploadToBox(data []byte, filePath string) (string, error) {
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	fmt.Println("Sending upload request to Box...")
-	resp, err := client.Do(req)
+	resp, err = client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to upload file: %v", err)
 	}
@@ -158,7 +227,7 @@ func UploadToBox(data []byte, filePath string) (string, error) {
 	fmt.Println("Successfully uploaded file, parsing response...")
 
 	// Try to parse the response
-	var result struct {
+	var uploadResult struct {
 		Entries []struct {
 			ID   string `json:"id"`
 			Name string `json:"name"`
@@ -168,15 +237,15 @@ func UploadToBox(data []byte, filePath string) (string, error) {
 		Name string `json:"name"`
 	}
 
-	if err := json.Unmarshal(respBody, &result); err != nil {
+	if err := json.Unmarshal(respBody, &uploadResult); err != nil {
 		return "", fmt.Errorf("failed to decode response: %v, response body: %s", err, string(respBody))
 	}
 
 	// Handle both response formats
-	if len(result.Entries) > 0 {
-		return fmt.Sprintf("File uploaded to Box: %s (ID: %s)", result.Entries[0].Name, result.Entries[0].ID), nil
-	} else if result.ID != "" {
-		return fmt.Sprintf("File uploaded to Box: %s (ID: %s)", result.Name, result.ID), nil
+	if len(uploadResult.Entries) > 0 {
+		return fmt.Sprintf("File uploaded to Box: %s (ID: %s)", uploadResult.Entries[0].Name, uploadResult.Entries[0].ID), nil
+	} else if uploadResult.ID != "" {
+		return fmt.Sprintf("File uploaded to Box: %s (ID: %s)", uploadResult.Name, uploadResult.ID), nil
 	}
 
 	return "", fmt.Errorf("unexpected response format: %s", string(respBody))

@@ -19,7 +19,7 @@ func TestKeychainStorage(t *testing.T) {
 	testFilePath := "test-wallet.json"
 
 	// Test Put
-	result, err := storage.Put(testData, testFilePath)
+	result, err := storage.Put(testData, testFilePath, true)
 	if err != nil {
 		t.Fatalf("Failed to store data in keychain: %v", err)
 	}

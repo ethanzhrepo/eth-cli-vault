@@ -198,7 +198,7 @@ func CreateCmd() *cobra.Command {
 					fullPath = filepath.Join(path, walletName+".json")
 				}
 
-				result, err := util.Put(path, walletJSON, fullPath)
+				result, err := util.Put(path, walletJSON, fullPath, force)
 				if err != nil {
 					fmt.Printf("Error saving wallet to %s: %v\n", fullPath, err)
 				} else {
@@ -209,7 +209,7 @@ func CreateCmd() *cobra.Command {
 			// 保存到云存储
 			for _, provider := range cloudProviders {
 				cloudPath := filepath.Join(util.DEFAULT_CLOUD_FILE_DIR, walletName+".json")
-				result, err := util.Put(provider, walletJSON, cloudPath)
+				result, err := util.Put(provider, walletJSON, cloudPath, force)
 				if err != nil {
 					fmt.Printf("Error saving wallet to %s: %v\n", provider, err)
 				} else {

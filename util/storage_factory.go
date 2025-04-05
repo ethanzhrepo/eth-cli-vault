@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -9,7 +10,7 @@ import (
 
 // Storage interface defines methods that any storage provider must implement
 type Storage interface {
-	Put(data []byte, filePath string) (string, error)
+	Put(data []byte, filePath string, withForce bool) (string, error)
 	Get(filePath string) ([]byte, error)
 	List(dir string) ([]string, error)
 }
@@ -45,13 +46,13 @@ func (f *StorageFactory) NewStorage(provider string) (Storage, error) {
 }
 
 // Put is a convenience method to put data using a specific provider
-func Put(provider string, data []byte, filePath string) (string, error) {
+func Put(provider string, data []byte, filePath string, withForce bool) (string, error) {
 	factory := &StorageFactory{}
 	storage, err := factory.NewStorage(provider)
 	if err != nil {
 		return "", err
 	}
-	return storage.Put(data, filePath)
+	return storage.Put(data, filePath, withForce)
 }
 
 // Get is a convenience method to get data using a specific provider
@@ -102,8 +103,8 @@ func isLocalPath(path string) bool {
 // GoogleDriveStorage implements Storage interface for Google Drive
 type GoogleDriveStorage struct{}
 
-func (g *GoogleDriveStorage) Put(data []byte, filePath string) (string, error) {
-	return UploadToGoogleDrive(data, filePath)
+func (g *GoogleDriveStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
+	return UploadToGoogleDrive(data, filePath, withForce)
 }
 
 func (g *GoogleDriveStorage) Get(filePath string) ([]byte, error) {
@@ -117,8 +118,8 @@ func (g *GoogleDriveStorage) List(dir string) ([]string, error) {
 // DropboxStorage implements Storage interface for Dropbox
 type DropboxStorage struct{}
 
-func (d *DropboxStorage) Put(data []byte, filePath string) (string, error) {
-	return UploadToDropbox(data, filePath)
+func (d *DropboxStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
+	return UploadToDropbox(data, filePath, withForce)
 }
 
 func (d *DropboxStorage) Get(filePath string) ([]byte, error) {
@@ -132,7 +133,15 @@ func (d *DropboxStorage) List(dir string) ([]string, error) {
 // LocalStorage implements Storage interface for local file system
 type LocalStorage struct{}
 
-func (l *LocalStorage) Put(data []byte, filePath string) (string, error) {
+func (l *LocalStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
+	if !withForce {
+		// Check if file already exists
+		if _, err := os.Stat(filePath); err == nil {
+			fmt.Printf("Error: Wallet file already exists in local storage: %s\n", filePath)
+			os.Exit(1)
+		}
+	}
+
 	err := SaveToFileSystem(data, filePath)
 	if err != nil {
 		return "", err
@@ -151,8 +160,8 @@ func (l *LocalStorage) List(dir string) ([]string, error) {
 // S3Storage implements Storage interface for AWS S3
 type S3Storage struct{}
 
-func (s *S3Storage) Put(data []byte, filePath string) (string, error) {
-	return UploadToS3(data, filePath)
+func (s *S3Storage) Put(data []byte, filePath string, withForce bool) (string, error) {
+	return UploadToS3(data, filePath, withForce)
 }
 
 func (s *S3Storage) Get(filePath string) ([]byte, error) {
@@ -166,8 +175,8 @@ func (s *S3Storage) List(dir string) ([]string, error) {
 // BoxStorage implements Storage interface for Box
 type BoxStorage struct{}
 
-func (b *BoxStorage) Put(data []byte, filePath string) (string, error) {
-	return UploadToBox(data, filePath)
+func (b *BoxStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
+	return UploadToBox(data, filePath, withForce)
 }
 
 func (b *BoxStorage) Get(filePath string) ([]byte, error) {

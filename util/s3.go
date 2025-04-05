@@ -84,7 +84,7 @@ func createS3Client() (*s3.Client, string, error) {
 }
 
 // UploadToS3 uploads data to S3 bucket
-func UploadToS3(data []byte, filePath string) (string, error) {
+func UploadToS3(data []byte, filePath string, withForce bool) (string, error) {
 	client, bucket, err := createS3Client()
 	if err != nil {
 		return "", err
@@ -95,6 +95,21 @@ func UploadToS3(data []byte, filePath string) (string, error) {
 
 	// Create a context for the upload operation
 	ctx := context.TODO()
+
+	// Check if file exists when withForce is false
+	if !withForce {
+		// Create a head object request to check if file exists
+		_, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(filePath),
+		})
+
+		// If no error, then object exists
+		if err == nil {
+			fmt.Printf("Error: Wallet already exists in S3: s3://%s/%s\n", bucket, filePath)
+			os.Exit(1)
+		}
+	}
 
 	// Upload the file to S3
 	_, err = client.PutObject(ctx, &s3.PutObjectInput{

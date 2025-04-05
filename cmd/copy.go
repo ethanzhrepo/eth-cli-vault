@@ -133,7 +133,7 @@ func CopyCmd() *cobra.Command {
 
 				// Save to cloud storage
 				cloudPath := filepath.Join(destDir, walletName+".json")
-				result, err := util.Put(toLocation, sourceData, cloudPath)
+				result, err := util.Put(toLocation, sourceData, cloudPath, false)
 				if err != nil {
 					fmt.Printf("Error copying wallet to %s: %v\n", toLocation, err)
 					os.Exit(1)
@@ -162,7 +162,7 @@ func CopyCmd() *cobra.Command {
 				}
 
 				// Save to local file
-				result, err := util.Put(toLocation, sourceData, destPath)
+				result, err := util.Put(toLocation, sourceData, destPath, false)
 				if err != nil {
 					fmt.Printf("Error copying wallet to %s: %v\n", destPath, err)
 					os.Exit(1)

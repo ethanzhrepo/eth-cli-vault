@@ -99,7 +99,7 @@ func GetDropboxOAuthConfig() (DropboxOAuthConfig, error) {
 }
 
 // 修改Dropbox OAuth配置中的重定向URI
-func UploadToDropbox(data []byte, filePath string) (string, error) {
+func UploadToDropbox(data []byte, filePath string, withForce bool) (string, error) {
 	ctx := context.Background()
 
 	// 获取OAuth配置
@@ -261,19 +261,33 @@ func UploadToDropbox(data []byte, filePath string) (string, error) {
 	}
 
 	// 检查文件是否已存在
+	fileExists := false
 	_, err = client.GetMetadata(&files.GetMetadataArg{Path: filePath})
 	if err == nil {
-		return "", fmt.Errorf("file already exists in Dropbox: %s (use a different path to avoid overwriting)", filePath)
+		fileExists = true
+	}
+
+	if fileExists && !withForce {
+		fmt.Printf("Error: File already exists in Dropbox: %s\n", filePath)
+		os.Exit(1)
+	}
+
+	// 设置写入模式
+	writeMode := &files.WriteMode{
+		Tagged: dropbox.Tagged{
+			Tag: "add",
+		},
+	}
+
+	// 如果文件存在且withForce为true，使用覆盖模式
+	if fileExists && withForce {
+		writeMode.Tagged.Tag = "overwrite"
 	}
 
 	// 上传文件
 	commitInfo := files.CommitInfo{
 		Path: filePath,
-		Mode: &files.WriteMode{
-			Tagged: dropbox.Tagged{
-				Tag: "add",
-			},
-		},
+		Mode: writeMode,
 	}
 	uploadArg := &files.UploadArg{
 		CommitInfo: commitInfo,

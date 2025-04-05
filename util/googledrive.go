@@ -71,7 +71,7 @@ func checkFileExistsInGoogleDrive(srv *drive.Service, fileName string, parentID 
 }
 
 // 修改uploadToGoogleDrive函数以检查文件是否存在
-func UploadToGoogleDrive(data []byte, filePath string) (string, error) {
+func UploadToGoogleDrive(data []byte, filePath string, withForce bool) (string, error) {
 	ctx := context.Background()
 
 	// 获取OAuth配置
@@ -172,8 +172,31 @@ func UploadToGoogleDrive(data []byte, filePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if exists {
-		return "", fmt.Errorf("file already exists in Google Drive: %s (use a different path to avoid overwriting)", filePath)
+	if exists && !withForce {
+		fmt.Printf("Error: File already exists in Google Drive: %s\n", filePath)
+		os.Exit(1)
+	}
+
+	// If file exists and withForce is true, we need to delete the existing file
+	if exists && withForce {
+		// Find the file ID
+		query := fmt.Sprintf("name='%s' and trashed=false", fileName)
+		if parentID != "" {
+			query += fmt.Sprintf(" and '%s' in parents", parentID)
+		}
+
+		fileList, err := srv.Files.List().Q(query).Fields("files(id)").Do()
+		if err != nil {
+			return "", fmt.Errorf("failed to query existing file: %v", err)
+		}
+
+		// Delete the file
+		if len(fileList.Files) > 0 {
+			err = srv.Files.Delete(fileList.Files[0].Id).Do()
+			if err != nil {
+				return "", fmt.Errorf("failed to delete existing file: %v", err)
+			}
+		}
 	}
 
 	// 创建文件
