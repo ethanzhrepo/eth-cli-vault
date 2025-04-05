@@ -31,6 +31,21 @@ var (
 	DefaultAwsS3Bucket        = ""
 )
 
+// S3Storage implements Storage interface for AWS S3
+type S3Storage struct{}
+
+func (s *S3Storage) Put(data []byte, filePath string, withForce bool) (string, error) {
+	return UploadToS3(data, filePath, withForce)
+}
+
+func (s *S3Storage) Get(filePath string) ([]byte, error) {
+	return DownloadFromS3(filePath)
+}
+
+func (s *S3Storage) List(dir string) ([]string, error) {
+	return ListS3Files(dir)
+}
+
 // Creates a new AWS S3 client using environment variables
 func createS3Client() (*s3.Client, string, error) {
 	// Check for required environment variables

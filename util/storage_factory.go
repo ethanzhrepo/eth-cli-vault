@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -98,91 +97,4 @@ func isLocalPath(path string) bool {
 		}
 	}
 	return true
-}
-
-// GoogleDriveStorage implements Storage interface for Google Drive
-type GoogleDriveStorage struct{}
-
-func (g *GoogleDriveStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
-	return UploadToGoogleDrive(data, filePath, withForce)
-}
-
-func (g *GoogleDriveStorage) Get(filePath string) ([]byte, error) {
-	return DownloadFromGoogleDrive(filePath)
-}
-
-func (g *GoogleDriveStorage) List(dir string) ([]string, error) {
-	return ListGoogleDriveFiles(dir)
-}
-
-// DropboxStorage implements Storage interface for Dropbox
-type DropboxStorage struct{}
-
-func (d *DropboxStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
-	return UploadToDropbox(data, filePath, withForce)
-}
-
-func (d *DropboxStorage) Get(filePath string) ([]byte, error) {
-	return DownloadFromDropbox(filePath)
-}
-
-func (d *DropboxStorage) List(dir string) ([]string, error) {
-	return ListDropboxFiles(dir)
-}
-
-// LocalStorage implements Storage interface for local file system
-type LocalStorage struct{}
-
-func (l *LocalStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
-	if !withForce {
-		// Check if file already exists
-		if _, err := os.Stat(filePath); err == nil {
-			fmt.Printf("Error: Wallet file already exists in local storage: %s\n", filePath)
-			os.Exit(1)
-		}
-	}
-
-	err := SaveToFileSystem(data, filePath)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("File saved to local file system: %s", filePath), nil
-}
-
-func (l *LocalStorage) Get(filePath string) ([]byte, error) {
-	return LoadFromFileSystem(filePath)
-}
-
-func (l *LocalStorage) List(dir string) ([]string, error) {
-	return ListFilesFromFileSystem(dir)
-}
-
-// S3Storage implements Storage interface for AWS S3
-type S3Storage struct{}
-
-func (s *S3Storage) Put(data []byte, filePath string, withForce bool) (string, error) {
-	return UploadToS3(data, filePath, withForce)
-}
-
-func (s *S3Storage) Get(filePath string) ([]byte, error) {
-	return DownloadFromS3(filePath)
-}
-
-func (s *S3Storage) List(dir string) ([]string, error) {
-	return ListS3Files(dir)
-}
-
-// BoxStorage implements Storage interface for Box
-type BoxStorage struct{}
-
-func (b *BoxStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
-	return UploadToBox(data, filePath, withForce)
-}
-
-func (b *BoxStorage) Get(filePath string) ([]byte, error) {
-	return DownloadFromBox(filePath)
-}
-
-func (b *BoxStorage) List(dir string) ([]string, error) {
-	return ListBoxFiles(dir)
 }

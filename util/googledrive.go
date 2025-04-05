@@ -20,6 +20,21 @@ import (
 	"google.golang.org/api/option"
 )
 
+// GoogleDriveStorage implements Storage interface for Google Drive
+type GoogleDriveStorage struct{}
+
+func (g *GoogleDriveStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
+	return UploadToGoogleDrive(data, filePath, withForce)
+}
+
+func (g *GoogleDriveStorage) Get(filePath string) ([]byte, error) {
+	return DownloadFromGoogleDrive(filePath)
+}
+
+func (g *GoogleDriveStorage) List(dir string) ([]string, error) {
+	return ListGoogleDriveFiles(dir)
+}
+
 // Variables that will be injected from main package when built using ldflags
 var (
 	DefaultGoogleOAuthClientID     = ""

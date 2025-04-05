@@ -40,6 +40,21 @@ var (
 	boxServerOnce sync.Once
 )
 
+// BoxStorage implements Storage interface for Box
+type BoxStorage struct{}
+
+func (b *BoxStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
+	return UploadToBox(data, filePath, withForce)
+}
+
+func (b *BoxStorage) Get(filePath string) ([]byte, error) {
+	return DownloadFromBox(filePath)
+}
+
+func (b *BoxStorage) List(dir string) ([]string, error) {
+	return ListBoxFiles(dir)
+}
+
 // Helper function to get environment variable or default value
 func getEnvOrDefault(key, defaultValue string) string {
 	value := os.Getenv(key)

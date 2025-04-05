@@ -7,6 +7,33 @@ import (
 	"strings"
 )
 
+// LocalStorage implements Storage interface for local file system
+type LocalStorage struct{}
+
+func (l *LocalStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
+	if !withForce {
+		// Check if file already exists
+		if _, err := os.Stat(filePath); err == nil {
+			fmt.Printf("Error: Wallet file already exists in local storage: %s\n", filePath)
+			os.Exit(1)
+		}
+	}
+
+	err := SaveToFileSystem(data, filePath)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("File saved to local file system: %s", filePath), nil
+}
+
+func (l *LocalStorage) Get(filePath string) ([]byte, error) {
+	return LoadFromFileSystem(filePath)
+}
+
+func (l *LocalStorage) List(dir string) ([]string, error) {
+	return ListFilesFromFileSystem(dir)
+}
+
 // SaveToFileSystem 将数据保存到本地文件系统
 func SaveToFileSystem(data []byte, path string) error {
 	// 创建必要的目录

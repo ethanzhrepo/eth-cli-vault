@@ -23,6 +23,21 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// DropboxStorage implements Storage interface for Dropbox
+type DropboxStorage struct{}
+
+func (d *DropboxStorage) Put(data []byte, filePath string, withForce bool) (string, error) {
+	return UploadToDropbox(data, filePath, withForce)
+}
+
+func (d *DropboxStorage) Get(filePath string) ([]byte, error) {
+	return DownloadFromDropbox(filePath)
+}
+
+func (d *DropboxStorage) List(dir string) ([]string, error) {
+	return ListDropboxFiles(dir)
+}
+
 // Variable that will be injected from main package when built using ldflags
 var DefaultDropboxAppKey = ""
 
