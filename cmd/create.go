@@ -88,15 +88,36 @@ func CreateCmd() *cobra.Command {
 				}
 			}
 
-			// 生成BIP39助记词
-			entropy, err := bip39.NewEntropy(256) // 生成256位熵，对应24个单词
+			// 获取AES加密密码
+			fmt.Println("\nPlease enter \033[1;31mAES Encryption Password\033[0m for extra security.")
+			fmt.Println("This password will be used to encrypt your \033[1;31mwallet file\033[0m.")
+			fmt.Println("If you forget it, you will not be able to recover your wallet.")
+			fmt.Println("Please enter it carefully.")
+			fmt.Println("It is recommended to use a strong password: \033[1;31m8 characters or more, including uppercase, lowercase, numbers, and special characters\033[0m.")
+			fmt.Println("Example: MyPassword123!")
+			fmt.Print("Please Enter \033[1;31mAES Encryption Password\033[0m: ")
+			passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
 			if err != nil {
-				fmt.Printf("Error generating entropy: %v\n", err)
+				fmt.Printf("\nError reading password: %v\n", err)
 				os.Exit(1)
 			}
-			mnemonic, err := bip39.NewMnemonic(entropy)
+			fmt.Print("\nPlease Re-Enter \033[1;31mAES Encryption Password\033[0m: ")
+			confirmPasswordBytes, err := term.ReadPassword(int(syscall.Stdin))
 			if err != nil {
-				fmt.Printf("Error generating mnemonic: %v\n", err)
+				fmt.Printf("\nError reading password confirmation: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println()
+
+			if string(passwordBytes) != string(confirmPasswordBytes) {
+				fmt.Println("Error: Passwords do not match")
+				os.Exit(1)
+			}
+			password := string(passwordBytes)
+
+			// 检查密码强度
+			if !isStrongPassword(password) {
+				fmt.Println("Error: Password is not strong enough. It must be at least 8 characters and include uppercase, lowercase, numbers, and special characters.")
 				os.Exit(1)
 			}
 
@@ -133,36 +154,15 @@ func CreateCmd() *cobra.Command {
 				passphrase = string(passphraseBytes)
 			}
 
-			// 获取AES加密密码
-			fmt.Println("\nPlease enter \033[1;31mAES Encryption Password\033[0m for extra security.")
-			fmt.Println("This password will be used to encrypt your \033[1;31mwallet file\033[0m.")
-			fmt.Println("If you forget it, you will not be able to recover your wallet.")
-			fmt.Println("Please enter it carefully.")
-			fmt.Println("It is recommended to use a strong password: \033[1;31m8 characters or more, including uppercase, lowercase, numbers, and special characters\033[0m.")
-			fmt.Println("Example: MyPassword123!")
-			fmt.Print("Please Enter \033[1;31mAES Encryption Password\033[0m: ")
-			passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
+			// 生成BIP39助记词
+			entropy, err := bip39.NewEntropy(256) // 生成256位熵，对应24个单词
 			if err != nil {
-				fmt.Printf("\nError reading password: %v\n", err)
+				fmt.Printf("Error generating entropy: %v\n", err)
 				os.Exit(1)
 			}
-			fmt.Print("\nPlease Re-Enter \033[1;31mAES Encryption Password\033[0m: ")
-			confirmPasswordBytes, err := term.ReadPassword(int(syscall.Stdin))
+			mnemonic, err := bip39.NewMnemonic(entropy)
 			if err != nil {
-				fmt.Printf("\nError reading password confirmation: %v\n", err)
-				os.Exit(1)
-			}
-			fmt.Println()
-
-			if string(passwordBytes) != string(confirmPasswordBytes) {
-				fmt.Println("Error: Passwords do not match")
-				os.Exit(1)
-			}
-			password := string(passwordBytes)
-
-			// 检查密码强度
-			if !isStrongPassword(password) {
-				fmt.Println("Error: Password is not strong enough. It must be at least 8 characters and include uppercase, lowercase, numbers, and special characters.")
+				fmt.Printf("Error generating mnemonic: %v\n", err)
 				os.Exit(1)
 			}
 
