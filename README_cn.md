@@ -20,7 +20,7 @@
 
 安全实践：使用aes和passpharse双重保护后在多个云盘备份。只需要记住两个密码，一个用来解密24个助记词，一个用来结合24个助记词还原密钥。
 
-[英文](./README.md) | [中文](./README_cn.md) 
+[English](./README.md) | [中文](./README_cn.md) 
 
 ## 重要安全提示
 
