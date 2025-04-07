@@ -30,11 +30,23 @@ func CreateCmd() *cobra.Command {
 	var walletName string
 	var withPassphrase bool
 	var force bool
+	var fsPath string
 
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new Ethereum wallet",
-		Long:  `Create a new Ethereum wallet with BIP39 mnemonic and optional passphrase, save it to local filesystem or cloud storage.`,
+		Long: `Create a new Ethereum wallet with BIP39 mnemonic and optional passphrase, save it to local filesystem or cloud storage.
+
+Supported storage options:
+- Local file: Use "--output fs --path /path/to/file.json"
+- Cloud storage: Use "--output provider1,provider2 --name walletName"
+  Supported providers: google, dropbox, s3, box, keychain (macOS only)
+- Mixed: Use "--output /local/path,google,dropbox --name walletName"
+
+Examples:
+  eth-cli create --output fs --path /tmp/wallet.json
+  eth-cli create --output google,dropbox --name myWallet
+  eth-cli create --output /home/user/wallets,google --name myWallet`,
 		Run: func(cmd *cobra.Command, args []string) {
 			// 初始化配置
 			initConfig()
@@ -46,7 +58,15 @@ func CreateCmd() *cobra.Command {
 				os.Exit(1)
 			}
 
-			if walletName == "" {
+			// 处理新的fs模式
+			if outputLocations == "fs" {
+				if fsPath == "" {
+					fmt.Println("Error: --path parameter is required when using --output fs")
+					cmd.Usage()
+					os.Exit(1)
+				}
+			} else if walletName == "" {
+				// 对于非fs模式，仍然需要name参数
 				fmt.Println("Error: --name parameter is required")
 				cmd.Usage()
 				os.Exit(1)
@@ -57,18 +77,23 @@ func CreateCmd() *cobra.Command {
 			var localPaths []string
 			var cloudProviders []string
 
-			for _, output := range outputs {
-				output = strings.TrimSpace(output)
-				isCloudProvider := false
-				for _, provider := range util.CLOUD_PROVIDERS {
-					if output == provider {
-						cloudProviders = append(cloudProviders, output)
-						isCloudProvider = true
-						break
+			// 处理fs模式
+			if outputLocations == "fs" {
+				localPaths = append(localPaths, fsPath)
+			} else {
+				for _, output := range outputs {
+					output = strings.TrimSpace(output)
+					isCloudProvider := false
+					for _, provider := range util.CLOUD_PROVIDERS {
+						if output == provider {
+							cloudProviders = append(cloudProviders, output)
+							isCloudProvider = true
+							break
+						}
 					}
-				}
-				if !isCloudProvider {
-					localPaths = append(localPaths, output)
+					if !isCloudProvider {
+						localPaths = append(localPaths, output)
+					}
 				}
 			}
 
@@ -77,7 +102,7 @@ func CreateCmd() *cobra.Command {
 				// 检查本地文件
 				for _, path := range localPaths {
 					fullPath := path
-					if !strings.HasSuffix(path, ".json") {
+					if outputLocations != "fs" && !strings.HasSuffix(path, ".json") {
 						// 如果是目录，则添加钱包名和扩展名
 						fullPath = filepath.Join(path, walletName+".json")
 					}
@@ -193,7 +218,7 @@ func CreateCmd() *cobra.Command {
 			// 保存到本地文件系统
 			for _, path := range localPaths {
 				fullPath := path
-				if !strings.HasSuffix(path, ".json") {
+				if outputLocations != "fs" && !strings.HasSuffix(path, ".json") {
 					// 如果是目录，则添加钱包名和扩展名
 					fullPath = filepath.Join(path, walletName+".json")
 				}
@@ -230,11 +255,15 @@ func CreateCmd() *cobra.Command {
 			fmt.Println("\nBefore using this wallet, please test it with the getAddress command:")
 
 			if len(localPaths) > 0 {
-				fullPath := localPaths[0]
-				if !strings.HasSuffix(fullPath, ".json") {
-					fullPath = filepath.Join(fullPath, walletName+".json")
+				if outputLocations == "fs" {
+					fmt.Printf("  eth-cli get -i %s\n", fsPath)
+				} else {
+					fullPath := localPaths[0]
+					if !strings.HasSuffix(fullPath, ".json") {
+						fullPath = filepath.Join(fullPath, walletName+".json")
+					}
+					fmt.Printf("  eth-cli get -i %s\n", fullPath)
 				}
-				fmt.Printf("  eth-cli get -i %s\n", fullPath)
 			}
 
 			if len(cloudProviders) > 0 {
@@ -254,13 +283,13 @@ func CreateCmd() *cobra.Command {
 	}
 
 	// 添加命令参数
-	cmd.Flags().StringVarP(&outputLocations, "output", "o", "", "Comma-separated list of output locations (local path or cloud provider)")
-	cmd.Flags().StringVarP(&walletName, "name", "n", "", "Name of the wallet file")
+	cmd.Flags().StringVarP(&outputLocations, "output", "o", "", "Output location: 'fs' for local file, or comma-separated list of cloud providers (supported: google, dropbox, s3, box, keychain)")
+	cmd.Flags().StringVarP(&walletName, "name", "n", "", "Name of the wallet file (required except when using --output fs)")
+	cmd.Flags().StringVarP(&fsPath, "path", "p", "", "File path for wallet when using --output fs")
 	cmd.Flags().BoolVar(&withPassphrase, "without-passphrase", false, "Skip the BIP39 passphrase step")
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "Force overwrite if wallet file already exists")
 
 	cmd.MarkFlagRequired("output")
-	cmd.MarkFlagRequired("name")
 
 	return cmd
 }

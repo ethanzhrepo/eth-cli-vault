@@ -163,6 +163,10 @@ export AWS_S3_BUCKET="your-bucket-name"
 # 将保存到云存储和指定的本地路径
 
 # 仅保存到本地文件（如果您不想使用云存储）
+./eth-cli create --output fs --path /path/to/save/myWallet.json [--force]
+# 您可以手动将此加密文件上传到任何云存储
+
+# 旧方法保存本地文件（仍然支持）
 ./eth-cli create --output /path/to/save/myWallet.json --name myWallet
 # 您可以手动将此加密文件上传到任何云存储
 ```

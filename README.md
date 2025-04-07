@@ -160,6 +160,10 @@ If you don't want to set up cloud storage credentials, you can still use the wal
 # Will save to cloud storage and specified local path
 
 # Save only to local file (if you don't want to use cloud storage)
+./eth-cli create --output fs --path /path/to/save/myWallet.json [--force]
+# You can manually upload this encrypted file to any cloud storage
+
+# Old method for local file (still supported)
 ./eth-cli create --output /path/to/save/myWallet.json --name myWallet
 # You can manually upload this encrypted file to any cloud storage
 ```
