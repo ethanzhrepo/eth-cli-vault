@@ -121,42 +121,20 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 		}
 
 		// Convert amount to token units
-		amountFloat, ok := new(big.Float).SetString(amountStr)
-		if !ok {
-			return fmt.Errorf("invalid amount format: %s", amountStr)
+		amount, err = util.ParseTokenAmount(amountStr, tokenDecimals)
+		if err != nil {
+			return fmt.Errorf("failed to parse token amount: %v", err)
 		}
-
-		// Calculate the amount in the token's smallest unit
-		multiplier := new(big.Float).SetInt(new(big.Int).Exp(
-			big.NewInt(10),
-			big.NewInt(int64(tokenDecimals)),
-			nil,
-		))
-		amountFloat.Mul(amountFloat, multiplier)
-
-		amount = new(big.Int)
-		amountFloat.Int(amount)
 	} else {
 		// For encode only, just use a default for the preview
 		tokenSymbol = "TOKEN"
 		tokenDecimals = 18
 
 		// Parse amount directly
-		amountFloat, ok := new(big.Float).SetString(amountStr)
-		if !ok {
-			return fmt.Errorf("invalid amount format: %s", amountStr)
+		amount, err = util.ParseTokenAmount(amountStr, tokenDecimals)
+		if err != nil {
+			return fmt.Errorf("failed to parse token amount: %v", err)
 		}
-
-		// Assume 18 decimals for encoding only
-		multiplier := new(big.Float).SetInt(new(big.Int).Exp(
-			big.NewInt(10),
-			big.NewInt(18),
-			nil,
-		))
-		amountFloat.Mul(amountFloat, multiplier)
-
-		amount = new(big.Int)
-		amountFloat.Int(amount)
 	}
 
 	// Get private key from provider or file

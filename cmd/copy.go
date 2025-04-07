@@ -171,7 +171,7 @@ func CopyCmd() *cobra.Command {
 				green := color.New(color.FgGreen, color.Bold)
 				green.Printf("Wallet copied to %s successfully!\n", destPath)
 				fmt.Println(result)
-				fmt.Printf("\nVerify with: go run main.go get --input %s\n", destPath)
+				fmt.Printf("\nVerify with: eth-cli get --input %s\n", destPath)
 			}
 		},
 	}

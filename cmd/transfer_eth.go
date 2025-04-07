@@ -14,6 +14,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Conversion factors for different units
+var (
+	weiPerEth  = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil) // 10^18
+	weiPerGwei = new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil)  // 10^9
+	weiPerWei  = big.NewInt(1)                                         // 10^0
+)
+
 // TransferETHCmd creates the ETH transfer command
 func TransferETHCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -299,38 +306,73 @@ func parseEthAmount(amount string) (*big.Int, error) {
 	for _, u := range []string{"eth", "gwei", "wei"} {
 		if strings.HasSuffix(lowerAmount, u) {
 			unit = u
-			value = strings.TrimSuffix(amount, u)
-			value = strings.TrimSuffix(value, strings.Title(u))
+			// Remove the unit suffix (case insensitive)
+			value = amount[:len(amount)-len(u)]
 			value = strings.TrimSpace(value)
 			break
 		}
 	}
 
-	// Parse the decimal value
-	floatVal, ok := new(big.Float).SetString(value)
-	if !ok {
+	// Split into integer and decimal parts
+	parts := strings.Split(value, ".")
+	if len(parts) > 2 {
 		return nil, fmt.Errorf("invalid amount format: %s", amount)
 	}
 
-	// Convert to wei based on unit
-	multiplier := new(big.Float)
+	// Parse integer part
+	intPart := parts[0]
+	if intPart == "" {
+		intPart = "0"
+	}
+	intVal := new(big.Int)
+	if _, ok := intVal.SetString(intPart, 10); !ok {
+		return nil, fmt.Errorf("invalid integer part: %s", intPart)
+	}
+
+	// Get the appropriate multiplier based on unit
+	var multiplier *big.Int
 	switch unit {
 	case "eth":
-		multiplier.SetString("1000000000000000000") // 10^18
+		multiplier = weiPerEth
 	case "gwei":
-		multiplier.SetString("1000000000") // 10^9
+		multiplier = weiPerGwei
 	case "wei":
-		multiplier.SetString("1") // 10^0
+		multiplier = weiPerWei
 	default:
 		return nil, fmt.Errorf("unsupported unit: %s", unit)
 	}
 
-	// Multiply by the appropriate factor
-	floatVal.Mul(floatVal, multiplier)
+	// Multiply integer part by the multiplier
+	result := new(big.Int).Mul(intVal, multiplier)
 
-	// Convert to integer
-	intVal := new(big.Int)
-	floatVal.Int(intVal)
+	// If there's a decimal part, handle it
+	if len(parts) == 2 {
+		decimalPart := parts[1]
+		if decimalPart != "" {
+			// Calculate the decimal multiplier (10^decimalPlaces)
+			decimalPlaces := len(decimalPart)
+			decimalMultiplier := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimalPlaces)), nil)
 
-	return intVal, nil
+			// Parse decimal part
+			decimalVal := new(big.Int)
+			if _, ok := decimalVal.SetString(decimalPart, 10); !ok {
+				return nil, fmt.Errorf("invalid decimal part: %s", decimalPart)
+			}
+
+			// Calculate the decimal contribution
+			// (decimalVal * multiplier) / decimalMultiplier
+			decimalContribution := new(big.Int).Mul(decimalVal, multiplier)
+			decimalContribution.Div(decimalContribution, decimalMultiplier)
+
+			// Add decimal contribution to result
+			result.Add(result, decimalContribution)
+		}
+	}
+
+	// Check for negative values
+	if result.Sign() < 0 {
+		return nil, fmt.Errorf("amount cannot be negative: %s", amount)
+	}
+
+	return result, nil
 }
