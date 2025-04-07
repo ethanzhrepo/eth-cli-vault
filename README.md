@@ -55,24 +55,23 @@ Always keep multiple backups of your encrypted wallet files and ensure you never
 ```bash
 # Download the latest release from the releases page
 # For macOS (Apple Silicon)
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.1/eth-cli-0.1.1-darwin-Silicon
-chmod +x eth-cli
-
-# For macOS (Intel)
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.1/eth-cli-0.1.1-darwin-intel
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.3/eth-cli-0.1.3-darwin-Silicon
 chmod +x eth-cli
 
 # For Linux (x64/amd64)
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.1/eth-cli-0.1.1-linux-amd64
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.3/eth-cli-0.1.3-linux-amd64
 chmod +x eth-cli
 
 # For Linux (arm64)
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.1/eth-cli-0.1.1-linux-arm64
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.3/eth-cli-0.1.3-linux-arm64
 chmod +x eth-cli
 
 # For Windows
 # Download from the releases page and rename to eth-cli.exe
-# https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.1/eth-cli-0.1.1-windows-amd64.exe
+# https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.3/eth-cli-0.1.3-windows-amd64.exe
+
+# For macOS (Intel)
+# We recommend building from source for Intel Macs (see Building from Source section below)
 ```
 
 ### Building from Source
@@ -92,11 +91,9 @@ make
 
 # The compiled binaries will be in the release directory
 # You can copy the appropriate binary for your system
-cp release/eth-cli-0.1.1-darwin-Silicon eth-cli  # For macOS Apple Silicon
+cp release/eth-cli-0.1.3-darwin-Silicon eth-cli  # For macOS Apple Silicon
 # or
-cp release/eth-cli-0.1.1-darwin-intel eth-cli  # For macOS Intel
-# or
-cp release/eth-cli-0.1.1-linux-amd64 eth-cli  # For Linux
+cp release/eth-cli-0.1.3-linux-amd64 eth-cli  # For Linux
 ```
 
 ### Environment Variables for Cloud Storage
