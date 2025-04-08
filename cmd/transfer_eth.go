@@ -213,25 +213,29 @@ func runTransferETH(cmd *cobra.Command, args []string) error {
 
 	// If dry run, just display the raw transaction and exit
 	if dryRun {
-		// Convert Wei to ETH for display
-		ethAmount := new(big.Float).Quo(
-			new(big.Float).SetInt(amountInWei),
-			new(big.Float).SetInt(big.NewInt(1000000000000000000)),
-		)
+		// Convert Wei to ETH for display using big.Int
+		ethAmount := new(big.Int).Div(amountInWei, big.NewInt(1e18))
+		remainder := new(big.Int).Mod(amountInWei, big.NewInt(1e18))
+		displayAmount := fmt.Sprintf("%d.%018d", ethAmount, remainder)
+
+		// Convert gas price to Gwei
+		gasPriceGwei := new(big.Int).Div(gasPrice, big.NewInt(1e9))
+		gasPriceRemainder := new(big.Int).Mod(gasPrice, big.NewInt(1e9))
+		displayGasPrice := fmt.Sprintf("%d.%09d", gasPriceGwei, gasPriceRemainder)
+
+		// Calculate gas fee in Wei
+		gasFee := new(big.Int).Mul(gasPrice, big.NewInt(int64(gasLimit)))
+		gasFeeEth := new(big.Int).Div(gasFee, big.NewInt(1e18))
+		gasFeeRemainder := new(big.Int).Mod(gasFee, big.NewInt(1e18))
+		displayGasFee := fmt.Sprintf("%d.%018d", gasFeeEth, gasFeeRemainder)
 
 		fmt.Println("\033[1;36mTransaction Details:\033[0m")
 		fmt.Printf("\033[1;33mFrom:\033[0m %s\n", fromAddress)
 		fmt.Printf("\033[1;33mTo:\033[0m %s\n", to)
-		fmt.Printf("\033[1;33mAmount:\033[0m \033[1;32m%s ETH\033[0m\n", ethAmount.Text('f', 18))
+		fmt.Printf("\033[1;33mAmount:\033[0m \033[1;32m%s ETH\033[0m\n", displayAmount)
 		fmt.Printf("\033[1;33mGas Limit:\033[0m %d\n", gasLimit)
-		fmt.Printf("\033[1;33mGas Price:\033[0m %s Gwei\n", new(big.Float).Quo(
-			new(big.Float).SetInt(gasPrice),
-			new(big.Float).SetInt(big.NewInt(1000000000)),
-		).Text('f', 9))
-		fmt.Printf("\033[1;33mGas Fee:\033[0m %s ETH\n", new(big.Float).Quo(
-			new(big.Float).SetInt(new(big.Int).Mul(gasPrice, big.NewInt(int64(gasLimit)))),
-			new(big.Float).SetInt(big.NewInt(1000000000000000000)),
-		).Text('f', 18))
+		fmt.Printf("\033[1;33mGas Price:\033[0m %s Gwei\n", displayGasPrice)
+		fmt.Printf("\033[1;33mGas Fee:\033[0m %s ETH\n", displayGasFee)
 		fmt.Printf("\033[1;33mNonce:\033[0m %d\n", nonce)
 		fmt.Printf("\033[1;33mChain ID:\033[0m %d\n", chainID)
 		fmt.Printf("\n\033[1;36mRaw Transaction:\033[0m %s\n", rawTx)
@@ -247,25 +251,29 @@ func runTransferETH(cmd *cobra.Command, args []string) error {
 
 	// Display transaction details for confirmation
 	if !autoConfirm {
-		// Convert Wei to ETH for display
-		ethAmount := new(big.Float).Quo(
-			new(big.Float).SetInt(amountInWei),
-			new(big.Float).SetInt(big.NewInt(1000000000000000000)),
-		)
+		// Convert Wei to ETH for display using big.Int
+		ethAmount := new(big.Int).Div(amountInWei, big.NewInt(1e18))
+		remainder := new(big.Int).Mod(amountInWei, big.NewInt(1e18))
+		displayAmount := fmt.Sprintf("%d.%018d", ethAmount, remainder)
+
+		// Convert gas price to Gwei
+		gasPriceGwei := new(big.Int).Div(gasPrice, big.NewInt(1e9))
+		gasPriceRemainder := new(big.Int).Mod(gasPrice, big.NewInt(1e9))
+		displayGasPrice := fmt.Sprintf("%d.%09d", gasPriceGwei, gasPriceRemainder)
+
+		// Calculate gas fee in Wei
+		gasFee := new(big.Int).Mul(gasPrice, big.NewInt(int64(gasLimit)))
+		gasFeeEth := new(big.Int).Div(gasFee, big.NewInt(1e18))
+		gasFeeRemainder := new(big.Int).Mod(gasFee, big.NewInt(1e18))
+		displayGasFee := fmt.Sprintf("%d.%018d", gasFeeEth, gasFeeRemainder)
 
 		fmt.Println("Transaction Details:")
 		fmt.Printf("From: %s\n", fromAddress)
-		fmt.Printf("To: %s\n", to)                              // Highlighted in the terminal
-		fmt.Printf("Amount: %s ETH\n", ethAmount.Text('f', 18)) // Highlighted in the terminal
+		fmt.Printf("To: %s\n", to)                    // Highlighted in the terminal
+		fmt.Printf("Amount: %s ETH\n", displayAmount) // Highlighted in the terminal
 		fmt.Printf("Gas Limit: %d\n", gasLimit)
-		fmt.Printf("Gas Price: %s Gwei\n", new(big.Float).Quo(
-			new(big.Float).SetInt(gasPrice),
-			new(big.Float).SetInt(big.NewInt(1000000000)),
-		).Text('f', 9))
-		fmt.Printf("Gas Fee: %s ETH\n", new(big.Float).Quo(
-			new(big.Float).SetInt(new(big.Int).Mul(gasPrice, big.NewInt(int64(gasLimit)))),
-			new(big.Float).SetInt(big.NewInt(1000000000000000000)),
-		).Text('f', 18))
+		fmt.Printf("Gas Price: %s Gwei\n", displayGasPrice)
+		fmt.Printf("Gas Fee: %s ETH\n", displayGasFee)
 		fmt.Printf("Nonce: %d\n", nonce)
 
 		// Ask for confirmation

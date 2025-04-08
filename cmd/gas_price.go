@@ -44,22 +44,23 @@ func GasPriceCmd() *cobra.Command {
 				os.Exit(1)
 			}
 
-			// 计算不同单位的 gas 价格
-			gweiPrice := new(big.Float).Quo(
-				new(big.Float).SetInt(gasPrice),
-				new(big.Float).SetInt(big.NewInt(params.GWei)),
-			)
-			etherPrice := new(big.Float).Quo(
-				new(big.Float).SetInt(gasPrice),
-				new(big.Float).SetInt(big.NewInt(params.Ether)),
-			)
+			// Convert to Gwei
+			gweiPrice := new(big.Int).Div(gasPrice, big.NewInt(params.GWei))
+			gweiRemainder := new(big.Int).Mod(gasPrice, big.NewInt(params.GWei))
+			displayGwei := fmt.Sprintf("%d.%09d", gweiPrice, gweiRemainder)
+
+			// Convert to Ether
+			etherPrice := new(big.Int).Div(gasPrice, big.NewInt(params.Ether))
+			etherRemainder := new(big.Int).Mod(gasPrice, big.NewInt(params.Ether))
+			displayEther := fmt.Sprintf("%d.%018d", etherPrice, etherRemainder)
+
 			// 输出rpc
 			fmt.Printf("RPC URL: %s\n", rpcURL)
 			// 输出 gas 价格
 			fmt.Printf("Current Gas Price:\n")
-			fmt.Printf("  %s Wei\n", gasPrice.String())
-			fmt.Printf("  %.2f Gwei\n", gweiPrice)
-			fmt.Printf("  %.9f ETH\n", etherPrice)
+			fmt.Printf("Wei:   %s\n", gasPrice.String())
+			fmt.Printf("Gwei:  %s\n", displayGwei)
+			fmt.Printf("ETH:   %s\n", displayEther)
 		},
 	}
 

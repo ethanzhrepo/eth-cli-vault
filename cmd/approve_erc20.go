@@ -312,14 +312,21 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 
 	// Display transaction details for confirmation
 	if !autoConfirm {
-		// Format amount for display with token's decimals
-		displayAmount := new(big.Float).SetInt(amount)
-		divisor := new(big.Float).SetInt(new(big.Int).Exp(
-			big.NewInt(10),
-			big.NewInt(int64(tokenDecimals)),
-			nil,
-		))
-		displayAmount.Quo(displayAmount, divisor)
+		// Convert amount to token units for display
+		amountInt := new(big.Int).Div(amount, big.NewInt(1e18))
+		amountRemainder := new(big.Int).Mod(amount, big.NewInt(1e18))
+		displayAmount := fmt.Sprintf("%d.%018d", amountInt, amountRemainder)
+
+		// Convert gas price to Gwei
+		gasPriceGwei := new(big.Int).Div(gasPrice, big.NewInt(1e9))
+		gasPriceRemainder := new(big.Int).Mod(gasPrice, big.NewInt(1e9))
+		displayGasPrice := fmt.Sprintf("%d.%09d", gasPriceGwei, gasPriceRemainder)
+
+		// Calculate gas fee in Wei
+		gasFee := new(big.Int).Mul(gasPrice, big.NewInt(int64(gasLimit)))
+		gasFeeEth := new(big.Int).Div(gasFee, big.NewInt(1e18))
+		gasFeeRemainder := new(big.Int).Mod(gasFee, big.NewInt(1e18))
+		displayGasFee := fmt.Sprintf("%d.%018d", gasFeeEth, gasFeeRemainder)
 
 		approveType := "Approval"
 		if amount.Cmp(big.NewInt(0)) == 0 {
@@ -329,18 +336,12 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 		fmt.Println("Transaction Details:")
 		fmt.Printf("Type: %s\n", approveType)
 		fmt.Printf("From: %s\n", fromAddress)
-		fmt.Printf("Spender: %s\n", to) // Highlighted in the terminal
+		fmt.Printf("Spender: %s\n", to)
 		fmt.Printf("Token: %s (%s)\n", tokenAddress, tokenSymbol)
-		fmt.Printf("Amount: %s %s\n", displayAmount.Text('f', int(tokenDecimals)), tokenSymbol) // Highlighted in the terminal
+		fmt.Printf("Amount: %s %s\n", displayAmount, tokenSymbol)
 		fmt.Printf("Gas Limit: %d\n", gasLimit)
-		fmt.Printf("Gas Price: %s Gwei\n", new(big.Float).Quo(
-			new(big.Float).SetInt(gasPrice),
-			new(big.Float).SetInt(big.NewInt(1000000000)),
-		).Text('f', 9))
-		fmt.Printf("Gas Fee: %s ETH\n", new(big.Float).Quo(
-			new(big.Float).SetInt(new(big.Int).Mul(gasPrice, big.NewInt(int64(gasLimit)))),
-			new(big.Float).SetInt(big.NewInt(1000000000000000000)),
-		).Text('f', 18))
+		fmt.Printf("Gas Price: %s Gwei\n", displayGasPrice)
+		fmt.Printf("Gas Fee: %s ETH\n", displayGasFee)
 		fmt.Printf("Nonce: %d\n", nonce)
 
 		// Ask for confirmation
