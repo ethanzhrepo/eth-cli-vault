@@ -23,7 +23,7 @@ How to back up your mnemonic phrase more securely? Write it on paper? Engrave it
 
 Security practice: Use AES and passphrase dual protection to back up across multiple cloud drives. Only need to remember two passwords - one to decrypt the 24 word mnemonic, and one to combine with the 24 words to restore the key.
 
-[English](./README.md) | [中文](./README_cn.md) 
+[English](./README.md) | [中文](./README_cn.md) | [Documentation](https://ethans-place.gitbook.io/eth-cli-vault)
 
 ## Important Security Note
 
