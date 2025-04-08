@@ -58,20 +58,20 @@
 ```bash
 # 从发布页面下载最新版本
 # macOS系统 (Apple Silicon)
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.3/eth-cli-0.1.3-darwin-Silicon
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.4/eth-cli-0.1.4-darwin-Silicon
 chmod +x eth-cli
 
 # Linux系统 (x64/amd64)
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.3/eth-cli-0.1.3-linux-amd64
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.4/eth-cli-0.1.4-linux-amd64
 chmod +x eth-cli
 
 # Linux系统 (arm64)
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.3/eth-cli-0.1.3-linux-arm64
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.4/eth-cli-0.1.4-linux-arm64
 chmod +x eth-cli
 
 # Windows系统
 # 从发布页面下载并重命名为eth-cli.exe
-# https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.3/eth-cli-0.1.3-windows-amd64.exe
+# https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.4/eth-cli-0.1.4-windows-amd64.exe
 
 # macOS系统 (Intel)
 # 对于Intel Mac，我们建议从源代码构建（请参见下面的"从源代码构建"部分）
