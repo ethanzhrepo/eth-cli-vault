@@ -30,11 +30,13 @@ func ApproveERC20Cmd() *cobra.Command {
 	cmd.Flags().StringP("provider", "p", "", "Key provider (e.g., googledrive)")
 	cmd.Flags().StringP("name", "n", "", "Name of the wallet file (for cloud storage)")
 	cmd.Flags().StringP("file", "f", "", "Local wallet file path")
-	cmd.Flags().Bool("encodeOnly", false, "Only encode the transaction, do not broadcast")
-	cmd.Flags().Bool("gasOnly", false, "Only display gas estimation")
+	cmd.Flags().Bool("dry-run", false, "Only encode the transaction, do not broadcast")
+	cmd.Flags().Bool("estimate-only", false, "Only display gas estimation")
 	cmd.Flags().BoolP("yes", "y", false, "Automatically confirm the transaction")
-	cmd.Flags().String("gasPrice", "", "Gas price (e.g., 3gwei)")
-	cmd.Flags().Uint64("gasLimit", 0, "Gas limit")
+	cmd.Flags().String("gas-price", "", "Gas price (e.g., 3gwei)")
+	cmd.Flags().Uint64("gas-limit", 0, "Gas limit")
+	cmd.Flags().Uint64("chain-id", 1, "Chain ID to use in dry-run mode (default: 1)")
+	cmd.Flags().Uint64("nonce", 0, "Nonce to use in dry-run mode (required when chain-id is specified)")
 	cmd.Flags().Bool("sync", false, "Wait for transaction confirmation")
 
 	cmd.MarkFlagRequired("amount")
@@ -52,11 +54,11 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 	provider, _ := cmd.Flags().GetString("provider")
 	name, _ := cmd.Flags().GetString("name")
 	filePath, _ := cmd.Flags().GetString("file")
-	encodeOnly, _ := cmd.Flags().GetBool("encodeOnly")
-	gasOnly, _ := cmd.Flags().GetBool("gasOnly")
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	estimateOnly, _ := cmd.Flags().GetBool("estimate-only")
 	autoConfirm, _ := cmd.Flags().GetBool("yes")
-	gasPriceStr, _ := cmd.Flags().GetString("gasPrice")
-	gasLimit, _ := cmd.Flags().GetUint64("gasLimit")
+	gasPriceStr, _ := cmd.Flags().GetString("gas-price")
+	gasLimit, _ := cmd.Flags().GetUint64("gas-limit")
 	sync, _ := cmd.Flags().GetBool("sync")
 
 	// Check mutual exclusivity between provider+name and file
@@ -71,7 +73,7 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 
 	// Get RPC URL from config
 	rpcURL, err := initTxConfig()
-	if err != nil && !encodeOnly {
+	if err != nil && !dryRun {
 		return err
 	}
 
@@ -83,9 +85,9 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check if we need RPC
-	if !encodeOnly {
+	if !dryRun {
 		if rpcURL == "" {
-			return fmt.Errorf("RPC URL is required when not using --encodeOnly")
+			return fmt.Errorf("RPC URL is required when not using --dry-run")
 		}
 	}
 
@@ -95,7 +97,7 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 	var tokenDecimals uint8
 	var amount *big.Int
 
-	if !encodeOnly {
+	if !dryRun {
 		var dialErr error
 		client, dialErr = ethclient.Dial(rpcURL)
 		if dialErr != nil {
@@ -126,7 +128,7 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to parse token amount: %v", err)
 		}
 	} else {
-		// For encode only, just use a default for the preview
+		// For dry run, just use a default for the preview
 		tokenSymbol = "TOKEN"
 		tokenDecimals = 18
 
@@ -151,16 +153,31 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get private key: %v", err)
 	}
 
-	// Get chain ID
+	// Get chain ID and nonce
 	var chainID *big.Int
-	if !encodeOnly {
+	var nonce uint64
+	if !dryRun {
 		var chainErr error
 		chainID, chainErr = client.NetworkID(context.Background())
 		if chainErr != nil {
 			return fmt.Errorf("failed to get chain ID: %v", chainErr)
 		}
+		fromAddr := common.HexToAddress(fromAddress)
+		nonce, err = util.GetNonce(client, fromAddr)
+		if err != nil {
+			return fmt.Errorf("failed to get nonce: %v", err)
+		}
 	} else {
-		chainID = big.NewInt(1) // Default to Ethereum mainnet if encode only
+		chainIDValue, _ := cmd.Flags().GetUint64("chain-id")
+		chainID = big.NewInt(int64(chainIDValue))
+		nonceValue, _ := cmd.Flags().GetUint64("nonce")
+
+		if chainIDValue != 1 && nonceValue == 0 {
+			return fmt.Errorf("--nonce is required when --chain-id is specified")
+		}
+
+		nonce = nonceValue
+		fmt.Printf("\033[33mWARNING: Using chain ID %d and nonce %d for dry run.\033[0m\n", chainIDValue, nonce)
 	}
 
 	// Get gas price
@@ -171,30 +188,31 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 		if gasPriceErr != nil {
 			return gasPriceErr
 		}
-	} else if !encodeOnly {
+	} else if !dryRun {
 		var suggestErr error
 		gasPrice, suggestErr = client.SuggestGasPrice(context.Background())
 		if suggestErr != nil {
 			return fmt.Errorf("failed to get suggested gas price: %v", suggestErr)
 		}
 	} else {
-		gasPrice = big.NewInt(1000000000) // Default 1 Gwei if encode only
+		gasPrice = big.NewInt(1000000000) // Default 1 Gwei if dry run
 	}
 
-	// Get nonce
-	var nonce uint64
-	if !encodeOnly {
-		var nonceErr error
+	// Get gas limit
+	if gasLimit == 0 && !dryRun {
 		fromAddr := common.HexToAddress(fromAddress)
-		nonce, nonceErr = util.GetNonce(client, fromAddr)
-		if nonceErr != nil {
-			return fmt.Errorf("failed to get nonce: %v", nonceErr)
+		toAddr := common.HexToAddress(to)
+		var gasEstimateErr error
+		gasLimit, gasEstimateErr = util.EstimateGas(client, fromAddr, &toAddr, nil, nil)
+		if gasEstimateErr != nil {
+			return fmt.Errorf("failed to estimate gas: %v", gasEstimateErr)
 		}
+	} else if gasLimit == 0 {
+		gasLimit = 100000 // Default gas limit for ERC20 approvals
 	}
 
 	// Create raw transaction
-	var createErr error
-	rawTx, createErr := util.CreateERC20ApproveTx(
+	rawTx, err := util.CreateERC20ApproveTx(
 		fromAddress,
 		tokenAddress,
 		to,
@@ -204,12 +222,12 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 		gasLimit,
 		chainID,
 	)
-	if createErr != nil {
-		return fmt.Errorf("failed to create transaction: %v", createErr)
+	if err != nil {
+		return fmt.Errorf("failed to create transaction: %v", err)
 	}
 
 	// Estimate gas if needed
-	if gasLimit == 0 && !encodeOnly {
+	if gasLimit == 0 && !dryRun {
 		// Decode the transaction to get tx data
 		txData, decodeErr := hexutil.Decode(rawTx)
 		if decodeErr != nil {
@@ -266,7 +284,7 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 	}
 
 	// If gas only, just display and exit
-	if gasOnly {
+	if estimateOnly {
 		fmt.Printf("Estimated Gas Limit: %d\n", gasLimit)
 		fmt.Printf("Suggested Gas Price: %s Gwei\n", new(big.Float).Quo(
 			new(big.Float).SetInt(gasPrice),
@@ -279,8 +297,8 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// If encode only, just display the raw transaction and exit
-	if encodeOnly {
+	// If dry run, just display the raw transaction and exit
+	if dryRun {
 		fmt.Printf("Raw Transaction: %s\n", rawTx)
 		return nil
 	}

@@ -221,70 +221,11 @@ This encryption configuration requires significant computational resources to at
 ./eth-cli transfer --amount 1.0eth --to 0xDestinationAddress --provider google --name myWallet [options]
 
 # Options:
-# --encodeOnly        Only create and display the raw transaction without broadcasting
-# --gasOnly           Only display gas estimation without creating transaction
+# --dry-run           Only create and display the raw transaction without broadcasting
+# --estimate-only     Only display gas estimation without creating transaction
 # --yes, -y           Automatically confirm transaction without prompting
-# --gasPrice 3gwei    Specify custom gas price
-# --gasLimit 21000    Specify custom gas limit
+# --gas-price 3gwei   Specify custom gas price
+# --gas-limit 21000   Specify custom gas limit
 # --sync              Wait for transaction confirmation
 # --file /path/to/wallet.json    Use local wallet file instead of cloud provider
 ```
-
-### Transfer ERC20 Tokens
-
-```bash
-./eth-cli transferERC20 --amount 120.23 --to 0xDestinationAddress --token 0xTokenContractAddress --provider google --name myWallet [options]
-```
-
-### Approve ERC20 Tokens
-
-```bash
-./eth-cli approveERC20 --amount 120.23 --to 0xSpenderAddress --token 0xTokenContractAddress --provider google --name myWallet [options]
-# Set amount to 0 to revoke approval
-```
-
-### Transfer ERC721 NFTs
-
-```bash
-./eth-cli transferERC721 --id tokenId --to 0xDestinationAddress --token 0xNFTContractAddress --provider google --name myWallet [options]
-```
-
-### Approve ERC721 NFTs
-
-```bash
-./eth-cli approveERC721 --id tokenId --to 0xOperatorAddress --token 0xNFTContractAddress --provider google --name myWallet [options]
-# Use 0x0000000000000000000000000000000000000000 address to revoke approval
-```
-
-## Signing Operations
-
-### Sign Raw Transaction
-
-```bash
-./eth-cli sign-raw-tx --raw-tx 0xRawTransactionHex --provider google --name myWallet [--broadcast]
-# Or using file:
-./eth-cli sign-raw-tx --raw-tx-file /path/to/tx.txt --provider google --name myWallet [--broadcast]
-```
-
-### Sign Message
-
-```bash
-./eth-cli sign-message --data "Hello, Ethereum!" --provider google --name myWallet
-# Or using hex:
-./eth-cli sign-message --hex --data 0x48656c6c6f2c20457468657265756d21 --provider google --name myWallet
-# Or from file:
-./eth-cli sign-message --data-file /path/to/message.txt --provider google --name myWallet
-```
-
-## Security Recommendations
-
-1. Store your BIP39 passphrase and AES password in separate, secure locations
-2. Test wallet access using the `get` command before transferring significant assets
-3. Consider using multiple storage providers for redundancy
-4. Always verify transaction details before confirming
-5. Keep multiple backups of your encrypted wallet files in different locations
-6. This wallet follows the principle of self-custody - you alone control and are responsible for your keys
-
-## License
-
-[License information]

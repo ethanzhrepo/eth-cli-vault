@@ -224,70 +224,11 @@ export AWS_S3_BUCKET="your-bucket-name"
 ./eth-cli transfer --amount 1.0eth --to 0xDestinationAddress --provider google --name myWallet [选项]
 
 # 选项：
-# --encodeOnly        仅创建并显示原始交易，不进行广播
-# --gasOnly           仅显示gas估算，不创建交易
+# --dry-run           仅创建并显示原始交易，不进行广播
+# --estimate-only     仅显示gas估算，不创建交易
 # --yes, -y           自动确认交易，不提示
-# --gasPrice 3gwei    指定自定义gas价格
-# --gasLimit 21000    指定自定义gas限制
+# --gas-price 3gwei   指定自定义gas价格
+# --gas-limit 21000   指定自定义gas限制
 # --sync              等待交易确认
 # --file /path/to/wallet.json    使用本地钱包文件而非云提供商
 ```
-
-### 转账 ERC20 代币
-
-```bash
-./eth-cli transferERC20 --amount 120.23 --to 0xDestinationAddress --token 0xTokenContractAddress --provider google --name myWallet [选项]
-```
-
-### 授权 ERC20 代币
-
-```bash
-./eth-cli approveERC20 --amount 120.23 --to 0xSpenderAddress --token 0xTokenContractAddress --provider google --name myWallet [选项]
-# 将 amount 设置为 0 可撤销授权
-```
-
-### 转账 ERC721 NFT
-
-```bash
-./eth-cli transferERC721 --id tokenId --to 0xDestinationAddress --token 0xNFTContractAddress --provider google --name myWallet [选项]
-```
-
-### 授权 ERC721 NFT
-
-```bash
-./eth-cli approveERC721 --id tokenId --to 0xOperatorAddress --token 0xNFTContractAddress --provider google --name myWallet [选项]
-# 使用 0x0000000000000000000000000000000000000000 地址可撤销授权
-```
-
-## 签名操作
-
-### 签署原始交易
-
-```bash
-./eth-cli sign-raw-tx --raw-tx 0xRawTransactionHex --provider google --name myWallet [--broadcast]
-# 或使用文件：
-./eth-cli sign-raw-tx --raw-tx-file /path/to/tx.txt --provider google --name myWallet [--broadcast]
-```
-
-### 签署消息
-
-```bash
-./eth-cli sign-message --data "Hello, Ethereum!" --provider google --name myWallet
-# 或使用十六进制：
-./eth-cli sign-message --hex --data 0x48656c6c6f2c20457468657265756d21 --provider google --name myWallet
-# 或从文件：
-./eth-cli sign-message --data-file /path/to/message.txt --provider google --name myWallet
-```
-
-## 安全建议
-
-1. 将您的 BIP39 密码短语和 AES 密码存储在不同的安全位置
-2. 在转移大量资产前，使用 `get` 命令测试钱包访问
-3. 考虑使用多个存储提供商以实现冗余
-4. 确认前始终验证交易详情
-5. 在不同位置保存多个加密钱包文件的备份
-6. 该钱包遵循自我托管原则 - 只有您自己控制并对您的密钥负责
-
-## 许可证
-
-[许可证信息]
