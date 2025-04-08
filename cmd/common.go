@@ -103,7 +103,7 @@ func getPrivateKeyFromProvider(provider string, name string) (string, string, er
 		if provider == p {
 			isCloudProvider = true
 			// 从云存储获取钱包文件
-			cloudPath := filepath.Join(util.DEFAULT_CLOUD_FILE_DIR, name+".json")
+			cloudPath := filepath.Join(util.GetWalletDir(), name+".json")
 			walletData, err = util.Get(provider, cloudPath)
 			if err != nil {
 				return "", "", fmt.Errorf("error loading wallet from %s: %v", provider, err)

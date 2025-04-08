@@ -233,7 +233,7 @@ Examples:
 
 			// 保存到云存储
 			for _, provider := range cloudProviders {
-				cloudPath := filepath.Join(util.DEFAULT_CLOUD_FILE_DIR, walletName+".json")
+				cloudPath := filepath.Join(util.GetWalletDir(), walletName+".json")
 				result, err := util.Put(provider, walletJSON, cloudPath, force)
 				if err != nil {
 					fmt.Printf("Error saving wallet to %s: %v\n", provider, err)

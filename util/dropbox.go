@@ -671,7 +671,7 @@ func ListDropboxFiles(dirPath string) ([]string, error) {
 
 	// 如果目录路径是默认的，使用默认的钱包目录
 	if dirPath == "" {
-		dirPath = DEFAULT_CLOUD_FILE_DIR
+		dirPath = GetWalletDir()
 	}
 
 	// 确保文件路径以/开头
