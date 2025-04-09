@@ -9,20 +9,10 @@ import (
 	"syscall"
 
 	"github.com/ethanzhrepo/eth-cli-wallet/util"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/spf13/cobra"
 	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/term"
 )
-
-// 钱包文件结构
-type WalletFile struct {
-	Version           int                    `json:"version"`
-	EncryptedMnemonic util.EncryptedMnemonic `json:"encrypted_mnemonic"`
-	HDPath            string                 `json:"hd_path"`
-	DerivationPath    string                 `json:"derivation_path"`
-	TestNet           bool                   `json:"testnet"`
-}
 
 // CreateCmd 返回 create 命令
 func CreateCmd() *cobra.Command {
@@ -242,16 +232,14 @@ Examples:
 				}
 			}
 
-			// 输出钱包地址
-			seed := bip39.NewSeed(mnemonic, passphrase)
-			privateKey, err := crypto.ToECDSA(seed[:32]) // 使用seed的前32字节作为私钥
+			// 获取钱包地址
+			addressHex, _, err := getAddressFromMnemonic(mnemonic, passphrase)
 			if err != nil {
-				fmt.Printf("Error deriving private key: %v\n", err)
+				fmt.Printf("Error generating address: %v\n", err)
 				os.Exit(1)
 			}
 
-			address := crypto.PubkeyToAddress(privateKey.PublicKey)
-			fmt.Printf("\nYour wallet address is: \033[1;32m%s\033[0m\n", address.Hex())
+			fmt.Printf("\nYour wallet address is: \033[1;32m%s\033[0m\n", addressHex)
 			fmt.Println("\nBefore using this wallet, please test it with the getAddress command:")
 
 			if len(localPaths) > 0 {

@@ -9,9 +9,7 @@ import (
 	"syscall"
 
 	"github.com/ethanzhrepo/eth-cli-wallet/util"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/spf13/cobra"
-	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/term"
 )
 
@@ -98,6 +96,8 @@ func GetAddressCmd() *cobra.Command {
 			// 显示助记词
 			if showMnemonics {
 				fmt.Printf("Decrypted Mnemonic: \033[1;32m%s\033[0m\n", mnemonic)
+				fmt.Printf("HD Path: \033[1;32m%s\033[0m\n", wallet.HDPath)
+				fmt.Printf("Derivation Path: \033[1;32m%s\033[0m\n", wallet.DerivationPath)
 			}
 
 			// 询问是否使用了passphrase
@@ -117,25 +117,19 @@ func GetAddressCmd() *cobra.Command {
 				passphrase = string(passphraseBytes)
 			}
 
-			// 从助记词生成种子
-			seed := bip39.NewSeed(mnemonic, passphrase)
-
-			// 从种子派生私钥
-			privateKey, err := crypto.ToECDSA(seed[:32]) // 使用seed的前32字节作为私钥
+			// 使用共用函数获取地址和私钥
+			addressHex, privateKeyBytes, err := getAddressFromMnemonic(mnemonic, passphrase)
 			if err != nil {
-				fmt.Printf("Error deriving private key: %v\n", err)
+				fmt.Printf("Error generating address: %v\n", err)
 				os.Exit(1)
 			}
 
-			// 生成钱包地址
-			address := crypto.PubkeyToAddress(privateKey.PublicKey)
-
 			// 输出地址
-			fmt.Printf("Wallet Address: \033[1;32m%s\033[0m\n", address.Hex())
+			fmt.Printf("Wallet Address: \033[1;32m%s\033[0m\n", addressHex)
 
 			// 如果开启显示私钥参数，则输出私钥
 			if showPrivateKey {
-				privateKeyHex := fmt.Sprintf("%x", crypto.FromECDSA(privateKey))
+				privateKeyHex := fmt.Sprintf("%x", privateKeyBytes)
 				fmt.Printf("Private Key: \033[1;31m%s\033[0m\n", privateKeyHex)
 			}
 		},

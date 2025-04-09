@@ -12,8 +12,18 @@ import (
 	"golang.org/x/term"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/tyler-smith/go-bip39"
 )
+
+// WalletFile 钱包文件结构
+type WalletFile struct {
+	Version           int                    `json:"version"`
+	EncryptedMnemonic util.EncryptedMnemonic `json:"encrypted_mnemonic"`
+	HDPath            string                 `json:"hd_path"`
+	DerivationPath    string                 `json:"derivation_path"`
+	TestNet           bool                   `json:"testnet"`
+}
 
 // initTxConfig initializes the configuration for transaction commands
 func initTxConfig() (string, error) {
@@ -27,6 +37,36 @@ func initTxConfig() (string, error) {
 	}
 
 	return rpcURL, nil
+}
+
+// getAddressFromMnemonic derives Ethereum address from mnemonic and passphrase
+func getAddressFromMnemonic(mnemonic, passphrase string) (string, []byte, error) {
+	// Generate seed from mnemonic
+	seed := bip39.NewSeed(mnemonic, passphrase)
+
+	// Use proper HD wallet derivation
+	wallet, err := hdwallet.NewFromSeed(seed)
+	if err != nil {
+		return "", nil, fmt.Errorf("error creating HD wallet: %v", err)
+	}
+
+	// Use the standard Ethereum derivation path (m/44'/60'/0'/0/0)
+	path := hdwallet.DefaultBaseDerivationPath
+	account, err := wallet.Derive(path, false)
+	if err != nil {
+		return "", nil, fmt.Errorf("error deriving account: %v", err)
+	}
+
+	// Get private key
+	privateKey, err := wallet.PrivateKey(account)
+	if err != nil {
+		return "", nil, fmt.Errorf("error getting private key: %v", err)
+	}
+
+	// Get address
+	address := account.Address.Hex()
+
+	return address, crypto.FromECDSA(privateKey), nil
 }
 
 // getPrivateKeyFromLocalFile retrieves a private key from a local wallet file
@@ -74,20 +114,13 @@ func getPrivateKeyFromLocalFile(filePath string) (string, string, error) {
 		passphrase = string(passphraseBytes)
 	}
 
-	// Generate seed from mnemonic
-	seed := bip39.NewSeed(mnemonic, passphrase)
-
-	// Derive private key from seed
-	privateKey, err := crypto.ToECDSA(seed[:32]) // Use first 32 bytes of seed as private key
+	address, privateKeyBytes, err := getAddressFromMnemonic(mnemonic, passphrase)
 	if err != nil {
-		return "", "", fmt.Errorf("error deriving private key: %v", err)
+		return "", "", err
 	}
 
 	// Get hex representation of private key
-	privateKeyHex := fmt.Sprintf("%x", crypto.FromECDSA(privateKey))
-
-	// Get address
-	address := crypto.PubkeyToAddress(privateKey.PublicKey).Hex()
+	privateKeyHex := fmt.Sprintf("%x", privateKeyBytes)
 
 	return privateKeyHex, address, nil
 }
@@ -157,20 +190,13 @@ func getPrivateKeyFromProvider(provider string, name string) (string, string, er
 		passphrase = string(passphraseBytes)
 	}
 
-	// 从助记词生成种子
-	seed := bip39.NewSeed(mnemonic, passphrase)
-
-	// 从种子派生私钥
-	privateKey, err := crypto.ToECDSA(seed[:32]) // 使用seed的前32字节作为私钥
+	address, privateKeyBytes, err := getAddressFromMnemonic(mnemonic, passphrase)
 	if err != nil {
-		return "", "", fmt.Errorf("error deriving private key: %v", err)
+		return "", "", err
 	}
 
 	// 获取私钥的十六进制字符串表示
-	privateKeyHex := fmt.Sprintf("%x", crypto.FromECDSA(privateKey))
-
-	// 获取地址
-	address := crypto.PubkeyToAddress(privateKey.PublicKey).Hex()
+	privateKeyHex := fmt.Sprintf("%x", privateKeyBytes)
 
 	return privateKeyHex, address, nil
 }
