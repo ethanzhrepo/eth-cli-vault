@@ -10,10 +10,20 @@ import (
 	"github.com/ethanzhrepo/eth-cli-wallet/util"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/spf13/cobra"
+)
+
+// Constants for gas estimation and token handling
+const (
+	DefaultGasLimitERC20  = 100000 // Default gas limit for ERC20 transfers
+	GasEstimationBuffer   = 1.2    // Multiply estimated gas by this factor
+	DefaultTokenDecimals  = 18     // Default decimal places for tokens
+	DefaultDryRunGasPrice = 1e9    // Default gas price for dry run (1 Gwei)
+	MaxSaneTokenDecimals  = 24     // Maximum reasonable number of decimals for a token
+	GweiToWei             = 1e9    // Conversion factor from Gwei to Wei
+	EthToWei              = 1e18   // Conversion factor from ETH to Wei
 )
 
 // ERC20Contract is the minimal interface needed for ERC20 operations
@@ -39,6 +49,7 @@ func (e *ERC20Contract) Symbol(ctx context.Context) (string, error) {
 	// In real implementation, properly decode according to ABI
 	symbol := ""
 	if len(result) > 32 {
+		// Handle dynamic string
 		offset := new(big.Int).SetBytes(result[0:32]).Int64()
 		if offset < int64(len(result)) {
 			length := new(big.Int).SetBytes(result[offset : offset+32]).Int64()
@@ -48,8 +59,13 @@ func (e *ERC20Contract) Symbol(ctx context.Context) (string, error) {
 			}
 		}
 	} else if len(result) > 0 {
-		// Some tokens return the symbol directly
-		symbol = string(result)
+		// Some older tokens return the symbol directly as bytes32
+		// Remove trailing zeros
+		i := 0
+		for i < len(result) && result[i] != 0 {
+			i++
+		}
+		symbol = string(result[:i])
 	}
 
 	return symbol, nil
@@ -69,11 +85,29 @@ func (e *ERC20Contract) Decimals(ctx context.Context) (uint8, error) {
 	}
 
 	if len(result) == 0 {
-		return 18, nil // Default to 18 if not specified
+		fmt.Printf("Warning: Token contract returned empty result for decimals, using default value (18)\n")
+		return 18, nil
 	}
 
-	// Extract decimal places
-	decimals := uint8(new(big.Int).SetBytes(result).Uint64())
+	// Extract decimal places - handle different response formats
+	var decimals uint8
+	if len(result) == 32 {
+		// Standard uint8 response, but packed in a uint256
+		decimals = uint8(new(big.Int).SetBytes(result).Uint64())
+	} else if len(result) == 1 {
+		// Direct uint8 response
+		decimals = uint8(result[0])
+	} else {
+		// Try to parse as uint256 anyway and hope for the best
+		decimals = uint8(new(big.Int).SetBytes(result).Uint64())
+	}
+
+	// Sanity check: Decimals usually between 0 and 24
+	if decimals > MaxSaneTokenDecimals {
+		fmt.Printf("Warning: Unusual decimals value: %d, using default value (%d)\n", decimals, DefaultTokenDecimals)
+		return DefaultTokenDecimals, nil
+	}
+
 	return decimals, nil
 }
 
@@ -114,6 +148,197 @@ func TransferERC20Cmd() *cobra.Command {
 	cmd.MarkFlagRequired("token")
 
 	return cmd
+}
+
+// setupClientAndTokenInfo sets up the client and gets token information
+func setupClientAndTokenInfo(rpcURL, tokenAddress string) (*ethclient.Client, string, uint8, error) {
+	client, err := ethclient.Dial(rpcURL)
+	if err != nil {
+		return nil, "", 0, fmt.Errorf("failed to connect to Ethereum node: %v", err)
+	}
+	fmt.Printf("Using RPC: %s\n", rpcURL)
+
+	// Get token info
+	tokenContract := NewERC20Contract(client, common.HexToAddress(tokenAddress))
+
+	// Get token symbol
+	tokenSymbol, err := tokenContract.Symbol(context.Background())
+	if err != nil {
+		return client, "", 0, fmt.Errorf("failed to get token symbol: %v", err)
+	}
+
+	// Get token decimals
+	tokenDecimals, err := tokenContract.Decimals(context.Background())
+	if err != nil {
+		return client, tokenSymbol, 0, fmt.Errorf("failed to get token decimals: %v", err)
+	}
+
+	fmt.Printf("Token Symbol: %s\n", tokenSymbol)
+	fmt.Printf("Token Decimals: %d\n", tokenDecimals)
+
+	return client, tokenSymbol, tokenDecimals, nil
+}
+
+// determineGasParameters gets gas price and estimates gas limit for an ERC20 transfer
+func determineGasParameters(client *ethclient.Client, fromAddress, tokenAddress, to string, amount *big.Int, gasLimit uint64, gasPriceStr string, dryRun bool) (uint64, *big.Int, error) {
+	// Get gas price
+	var gasPrice *big.Int
+	var err error
+
+	if gasPriceStr != "" {
+		gasPrice, err = parseEthAmount(gasPriceStr)
+		if err != nil {
+			return 0, nil, err
+		}
+	} else if !dryRun {
+		gasPrice, err = client.SuggestGasPrice(context.Background())
+		if err != nil {
+			return 0, nil, fmt.Errorf("failed to get suggested gas price: %v", err)
+		}
+		fmt.Printf("Suggested Gas Price: %s Gwei\n", new(big.Float).Quo(
+			new(big.Float).SetInt(gasPrice),
+			new(big.Float).SetInt(big.NewInt(GweiToWei)),
+		).Text('f', 9))
+	} else {
+		gasPrice = big.NewInt(DefaultDryRunGasPrice) // Default 1 Gwei if dry run
+	}
+
+	// Get gas limit
+	if gasLimit == 0 && !dryRun {
+		fromAddr := common.HexToAddress(fromAddress)
+		tokenContractAddr := common.HexToAddress(tokenAddress)
+		recipientAddr := common.HexToAddress(to)
+
+		// Prepare ERC20 transfer data
+		transferFnSignature := []byte{0xa9, 0x05, 0x9c, 0xbb} // keccak256("transfer(address,uint256)")[:4]
+		paddedAddress := common.LeftPadBytes(recipientAddr.Bytes(), 32)
+		paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
+
+		var data []byte
+		data = append(data, transferFnSignature...)
+		data = append(data, paddedAddress...)
+		data = append(data, paddedAmount...)
+
+		// Estimate gas using the proper ERC20 transfer parameters
+		gasLimit, err = util.EstimateGas(client, fromAddr, &tokenContractAddr, big.NewInt(0), data)
+
+		if err != nil {
+			// Print detailed error information
+			fmt.Printf("WARNING: Failed to estimate gas: %v\n", err)
+
+			// Try to get more information by simulating the transaction
+			msg := ethereum.CallMsg{
+				From:  fromAddr,
+				To:    &tokenContractAddr,
+				Value: big.NewInt(0),
+				Data:  data,
+			}
+
+			// Try to simulate the transaction to get more error details
+			result, callErr := client.CallContract(context.Background(), msg, nil)
+			if callErr != nil {
+				fmt.Printf("ERROR: Transaction simulation details: %v\n", callErr)
+				if strings.Contains(callErr.Error(), "revert") {
+					revertReason := callErr.Error()
+					if strings.Contains(revertReason, "execution reverted: ") {
+						parts := strings.Split(revertReason, "execution reverted: ")
+						if len(parts) > 1 {
+							fmt.Printf("REVERT REASON: %s\n", parts[1])
+						}
+					}
+				}
+			} else if len(result) > 0 {
+				fmt.Printf("ERROR: Contract call result: 0x%x\n", result)
+			}
+
+			// Check account balance
+			balance, balErr := client.BalanceAt(context.Background(), fromAddr, nil)
+			if balErr == nil {
+				fmt.Printf("INFO: Current account balance: %s ETH\n",
+					new(big.Float).Quo(
+						new(big.Float).SetInt(balance),
+						new(big.Float).SetInt(big.NewInt(EthToWei)),
+					).Text('f', 18))
+			}
+
+			// Fall back to default gas limit
+			fmt.Printf("Using default gas limit for ERC20 transfer: %d\n", DefaultGasLimitERC20)
+			gasLimit = DefaultGasLimitERC20
+		} else {
+			// Add buffer to estimated gas
+			gasLimit = uint64(float64(gasLimit) * GasEstimationBuffer)
+			fmt.Printf("Estimated gas with buffer: %d\n", gasLimit)
+		}
+	} else if gasLimit == 0 && dryRun {
+		return 0, nil, fmt.Errorf("gas limit is required when --dry-run is true")
+	}
+
+	return gasLimit, gasPrice, nil
+}
+
+// formatAndDisplayTxDetails formats and displays transaction details for user confirmation
+func formatAndDisplayTxDetails(
+	fromAddress, to, tokenAddress, tokenSymbol string,
+	amount *big.Int, tokenDecimals uint8,
+	gasLimit uint64, gasPrice *big.Int, nonce uint64) {
+
+	// Convert amount to token units for display using the token's decimal places
+	divisor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(tokenDecimals)), nil)
+	amountInt := new(big.Int).Div(amount, divisor)
+	amountRemainder := new(big.Int).Mod(amount, divisor)
+
+	// Format with the correct number of decimal places
+	displayAmount := fmt.Sprintf("%d.%0*d", amountInt, tokenDecimals, amountRemainder)
+
+	// Convert gas price to Gwei
+	gasPriceGwei := new(big.Int).Div(gasPrice, big.NewInt(GweiToWei))
+	gasPriceRemainder := new(big.Int).Mod(gasPrice, big.NewInt(GweiToWei))
+	displayGasPrice := fmt.Sprintf("%d.%09d", gasPriceGwei, gasPriceRemainder)
+
+	// Calculate gas fee in Wei
+	gasFee := new(big.Int).Mul(gasPrice, big.NewInt(int64(gasLimit)))
+	gasFeeEth := new(big.Int).Div(gasFee, big.NewInt(EthToWei))
+	gasFeeRemainder := new(big.Int).Mod(gasFee, big.NewInt(EthToWei))
+	displayGasFee := fmt.Sprintf("%d.%018d", gasFeeEth, gasFeeRemainder)
+
+	fmt.Println("Transaction Details:")
+	fmt.Printf("From: %s\n", fromAddress)
+	fmt.Printf("To: %s\n", to)
+	fmt.Printf("Token: %s (%s)\n", tokenAddress, tokenSymbol)
+	fmt.Printf("Amount: %s %s\n", displayAmount, tokenSymbol)
+	fmt.Printf("Gas Limit: %d\n", gasLimit)
+	fmt.Printf("Gas Price: %s Gwei\n", displayGasPrice)
+	fmt.Printf("Gas Fee: %s ETH\n", displayGasFee)
+	fmt.Printf("Nonce: %d\n", nonce)
+}
+
+// waitForConfirmation waits for a transaction to be confirmed
+func waitForConfirmation(client *ethclient.Client, txHash string) error {
+	fmt.Println("Waiting for transaction confirmation...")
+
+	// Wait for transaction to be mined
+	var receipt *types.Receipt
+	for {
+		var receiptErr error
+		receipt, receiptErr = client.TransactionReceipt(context.Background(), common.HexToHash(txHash))
+		if receiptErr == nil {
+			break
+		}
+		if receiptErr != nil && receiptErr.Error() != "not found" {
+			return fmt.Errorf("failed to get transaction receipt: %v", receiptErr)
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	if receipt.Status == 1 {
+		fmt.Println("Transaction confirmed successfully!")
+	} else {
+		fmt.Println("Transaction failed!")
+	}
+	fmt.Printf("Block Number: %d\n", receipt.BlockNumber)
+	fmt.Printf("Gas Used: %d\n", receipt.GasUsed)
+
+	return nil
 }
 
 func runTransferERC20(cmd *cobra.Command, args []string) error {
@@ -161,39 +386,18 @@ func runTransferERC20(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Connect to Ethereum client if needed
+	// Connect to Ethereum client and get token info if not dry run
 	var client *ethclient.Client
 	var tokenSymbol string
 	var tokenDecimals uint8
 	var amount *big.Int
 
 	if !dryRun {
-		var dialErr error
-		client, dialErr = ethclient.Dial(rpcURL)
-		if dialErr != nil {
-			return fmt.Errorf("failed to connect to Ethereum node: %v", dialErr)
+		var setupErr error
+		client, tokenSymbol, tokenDecimals, setupErr = setupClientAndTokenInfo(rpcURL, tokenAddress)
+		if setupErr != nil {
+			return setupErr
 		}
-		fmt.Printf("Using RPC: %s\n", rpcURL)
-
-		// Get token info
-		tokenContract := NewERC20Contract(client, common.HexToAddress(tokenAddress))
-
-		// Get token symbol
-		var symbolErr error
-		tokenSymbol, symbolErr = tokenContract.Symbol(context.Background())
-		if symbolErr != nil {
-			return fmt.Errorf("failed to get token symbol: %v", symbolErr)
-		}
-
-		// Get token decimals
-		var decimalsErr error
-		tokenDecimals, decimalsErr = tokenContract.Decimals(context.Background())
-		if decimalsErr != nil {
-			return fmt.Errorf("failed to get token decimals: %v", decimalsErr)
-		}
-
-		fmt.Printf("Token Symbol: %s\n", tokenSymbol)
-		fmt.Printf("Token Decimals: %d\n", tokenDecimals)
 
 		// Convert amount to token units
 		amount, err = util.ParseTokenAmount(amountStr, tokenDecimals)
@@ -203,7 +407,7 @@ func runTransferERC20(cmd *cobra.Command, args []string) error {
 	} else {
 		// For dry run, just use a default for the preview
 		tokenSymbol = "TOKEN"
-		tokenDecimals = 18
+		tokenDecimals = DefaultTokenDecimals
 
 		// Parse amount directly
 		amount, err = util.ParseTokenAmount(amountStr, tokenDecimals)
@@ -253,35 +457,10 @@ func runTransferERC20(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\033[33mWARNING: Using chain ID %d and nonce %d for dry run.\033[0m\n", chainIDValue, nonce)
 	}
 
-	// Get gas price
-	var gasPrice *big.Int
-	if gasPriceStr != "" {
-		var gasPriceErr error
-		gasPrice, gasPriceErr = parseEthAmount(gasPriceStr)
-		if gasPriceErr != nil {
-			return gasPriceErr
-		}
-	} else if !dryRun {
-		var suggestErr error
-		gasPrice, suggestErr = client.SuggestGasPrice(context.Background())
-		if suggestErr != nil {
-			return fmt.Errorf("failed to get suggested gas price: %v", suggestErr)
-		}
-	} else {
-		gasPrice = big.NewInt(1000000000) // Default 1 Gwei if dry run
-	}
-
-	// Get gas limit
-	if gasLimit == 0 && !dryRun {
-		fromAddr := common.HexToAddress(fromAddress)
-		toAddr := common.HexToAddress(to)
-		var gasEstimateErr error
-		gasLimit, gasEstimateErr = util.EstimateGas(client, fromAddr, &toAddr, amount, nil)
-		if gasEstimateErr != nil {
-			return fmt.Errorf("failed to estimate gas: %v", gasEstimateErr)
-		}
-	} else if gasLimit == 0 {
-		gasLimit = 100000 // Default gas limit for ERC20 transfers
+	// Determine gas parameters
+	gasLimit, gasPrice, err := determineGasParameters(client, fromAddress, tokenAddress, to, amount, gasLimit, gasPriceStr, dryRun)
+	if err != nil {
+		return err
 	}
 
 	// Create raw transaction
@@ -299,115 +478,16 @@ func runTransferERC20(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create transaction: %v", err)
 	}
 
-	// Estimate gas if needed
-	if gasLimit == 0 && !dryRun {
-		// Decode the transaction to get tx data
-		txData, decodeErr := hexutil.Decode(rawTx)
-		if decodeErr != nil {
-			return fmt.Errorf("decode transaction failed: %v", decodeErr)
-		}
-
-		var tx types.Transaction
-		unmarshalErr := tx.UnmarshalBinary(txData)
-		if unmarshalErr != nil {
-			return fmt.Errorf("unmarshal transaction failed: %v", unmarshalErr)
-		}
-
-		fromAddr := common.HexToAddress(fromAddress)
-		toAddr := *tx.To()
-		gasEstimateErr := error(nil)
-		fmt.Printf("From Address: %s\n", fromAddr.Hex())
-		fmt.Printf("To Address: %s\n", toAddr.Hex())
-		fmt.Printf("Value: %s\n", tx.Value().String())
-		fmt.Printf("Data: %s\n", hexutil.Encode(tx.Data()))
-		gasLimit, gasEstimateErr = util.EstimateGas(client, fromAddr, &toAddr, tx.Value(), tx.Data())
-		if gasEstimateErr != nil {
-			// Print detailed error information to console
-			fmt.Printf("ERROR: Failed to estimate gas: %v\n", gasEstimateErr)
-
-			// Try to get more information about the error
-			msg := ethereum.CallMsg{
-				From:  fromAddr,
-				To:    &toAddr,
-				Value: tx.Value(),
-				Data:  tx.Data(),
-			}
-
-			// Try to simulate the transaction to get more error details
-			result, callErr := client.CallContract(context.Background(), msg, nil)
-			if callErr != nil {
-				fmt.Printf("ERROR: Transaction simulation details: %v\n", callErr)
-				if strings.Contains(callErr.Error(), "revert") {
-					revertReason := callErr.Error()
-					if strings.Contains(revertReason, "execution reverted: ") {
-						parts := strings.Split(revertReason, "execution reverted: ")
-						if len(parts) > 1 {
-							fmt.Printf("REVERT REASON: %s\n", parts[1])
-						}
-					}
-				}
-			} else if len(result) > 0 {
-				fmt.Printf("ERROR: Contract call result: 0x%x\n", result)
-			}
-
-			// If balance is insufficient, report it
-			balance, balErr := client.BalanceAt(context.Background(), fromAddr, nil)
-			if balErr == nil {
-				fmt.Printf("INFO: Current account balance: %s ETH\n",
-					new(big.Float).Quo(
-						new(big.Float).SetInt(balance),
-						new(big.Float).SetInt(big.NewInt(1000000000000000000)),
-					).Text('f', 18))
-			}
-
-			return fmt.Errorf("failed to estimate gas: %v", gasEstimateErr)
-		}
-
-		// Recreate the transaction with the estimated gas limit
-		recreateErr := error(nil)
-		rawTx, recreateErr = util.CreateERC20TransferTx(
-			fromAddress,
-			tokenAddress,
-			to,
-			amount,
-			nonce,
-			gasPrice,
-			gasLimit,
-			chainID,
-		)
-		if recreateErr != nil {
-			return fmt.Errorf("failed to create transaction with estimated gas: %v", recreateErr)
-		}
-	} else if gasLimit == 0 {
-		gasLimit = 100000 // Default gas limit for ERC20 transfers
-
-		// Recreate the transaction with the default gas limit
-		defaultGasErr := error(nil)
-		rawTx, defaultGasErr = util.CreateERC20TransferTx(
-			fromAddress,
-			tokenAddress,
-			to,
-			amount,
-			nonce,
-			gasPrice,
-			gasLimit,
-			chainID,
-		)
-		if defaultGasErr != nil {
-			return fmt.Errorf("failed to create transaction with default gas: %v", defaultGasErr)
-		}
-	}
-
 	// If gas only, just display and exit
 	if estimateOnly {
 		fmt.Printf("Estimated Gas Limit: %d\n", gasLimit)
 		fmt.Printf("Suggested Gas Price: %s Gwei\n", new(big.Float).Quo(
 			new(big.Float).SetInt(gasPrice),
-			new(big.Float).SetInt(big.NewInt(1000000000)),
+			new(big.Float).SetInt(big.NewInt(GweiToWei)),
 		).Text('f', 9))
 		fmt.Printf("Estimated Gas Fee: %s ETH\n", new(big.Float).Quo(
 			new(big.Float).SetInt(new(big.Int).Mul(gasPrice, big.NewInt(int64(gasLimit)))),
-			new(big.Float).SetInt(big.NewInt(1000000000000000000)),
+			new(big.Float).SetInt(big.NewInt(EthToWei)),
 		).Text('f', 18))
 		return nil
 	}
@@ -419,39 +499,18 @@ func runTransferERC20(cmd *cobra.Command, args []string) error {
 	}
 
 	// Sign the transaction
-	var signErr error
-	signedTx, signErr := util.SignTransaction(rawTx, privateKey)
-	if signErr != nil {
-		return fmt.Errorf("failed to sign transaction: %v", signErr)
+	signedTx, err := util.SignTransaction(rawTx, privateKey)
+	if err != nil {
+		return fmt.Errorf("failed to sign transaction: %v", err)
 	}
 
 	// Display transaction details for confirmation
 	if !autoConfirm {
-		// Convert amount to token units for display
-		amountInt := new(big.Int).Div(amount, big.NewInt(1e18))
-		amountRemainder := new(big.Int).Mod(amount, big.NewInt(1e18))
-		displayAmount := fmt.Sprintf("%d.%018d", amountInt, amountRemainder)
-
-		// Convert gas price to Gwei
-		gasPriceGwei := new(big.Int).Div(gasPrice, big.NewInt(1e9))
-		gasPriceRemainder := new(big.Int).Mod(gasPrice, big.NewInt(1e9))
-		displayGasPrice := fmt.Sprintf("%d.%09d", gasPriceGwei, gasPriceRemainder)
-
-		// Calculate gas fee in Wei
-		gasFee := new(big.Int).Mul(gasPrice, big.NewInt(int64(gasLimit)))
-		gasFeeEth := new(big.Int).Div(gasFee, big.NewInt(1e18))
-		gasFeeRemainder := new(big.Int).Mod(gasFee, big.NewInt(1e18))
-		displayGasFee := fmt.Sprintf("%d.%018d", gasFeeEth, gasFeeRemainder)
-
-		fmt.Println("Transaction Details:")
-		fmt.Printf("From: %s\n", fromAddress)
-		fmt.Printf("To: %s\n", to)
-		fmt.Printf("Token: %s (%s)\n", tokenAddress, tokenSymbol)
-		fmt.Printf("Amount: %s %s\n", displayAmount, tokenSymbol)
-		fmt.Printf("Gas Limit: %d\n", gasLimit)
-		fmt.Printf("Gas Price: %s Gwei\n", displayGasPrice)
-		fmt.Printf("Gas Fee: %s ETH\n", displayGasFee)
-		fmt.Printf("Nonce: %d\n", nonce)
+		formatAndDisplayTxDetails(
+			fromAddress, to, tokenAddress, tokenSymbol,
+			amount, tokenDecimals,
+			gasLimit, gasPrice, nonce,
+		)
 
 		// Ask for confirmation
 		fmt.Print("Confirm transaction? (y/N): ")
@@ -464,39 +523,16 @@ func runTransferERC20(cmd *cobra.Command, args []string) error {
 	}
 
 	// Broadcast the transaction
-	var broadcastErr error
-	txHash, broadcastErr := util.BroadcastTransaction(signedTx, rpcURL)
-	if broadcastErr != nil {
-		return fmt.Errorf("failed to broadcast transaction: %v", broadcastErr)
+	txHash, err := util.BroadcastTransaction(signedTx, rpcURL)
+	if err != nil {
+		return fmt.Errorf("failed to broadcast transaction: %v", err)
 	}
 
 	fmt.Printf("Transaction submitted: %s\n", txHash)
 
 	// Wait for confirmation if requested
 	if sync {
-		fmt.Println("Waiting for transaction confirmation...")
-
-		// Wait for transaction to be mined
-		var receipt *types.Receipt
-		for {
-			var receiptErr error
-			receipt, receiptErr = client.TransactionReceipt(context.Background(), common.HexToHash(txHash))
-			if receiptErr == nil {
-				break
-			}
-			if receiptErr != nil && receiptErr.Error() != "not found" {
-				return fmt.Errorf("failed to get transaction receipt: %v", receiptErr)
-			}
-			time.Sleep(2 * time.Second)
-		}
-
-		if receipt.Status == 1 {
-			fmt.Println("Transaction confirmed successfully!")
-		} else {
-			fmt.Println("Transaction failed!")
-		}
-		fmt.Printf("Block Number: %d\n", receipt.BlockNumber)
-		fmt.Printf("Gas Used: %d\n", receipt.GasUsed)
+		return waitForConfirmation(client, txHash)
 	}
 
 	return nil

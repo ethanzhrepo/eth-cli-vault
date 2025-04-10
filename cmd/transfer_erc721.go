@@ -10,8 +10,8 @@ import (
 	"github.com/ethanzhrepo/eth-cli-wallet/util"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/spf13/cobra"
 )
@@ -179,20 +179,39 @@ func runTransferERC721(cmd *cobra.Command, args []string) error {
 		gasPrice = big.NewInt(1000000000) // Default 1 Gwei if dry run
 	}
 
-	// Get gas limit
-	if gasLimit == 0 && !dryRun {
-		fromAddr := common.HexToAddress(fromAddress)
-		toAddr := common.HexToAddress(to)
-		var gasEstimateErr error
-		gasLimit, gasEstimateErr = util.EstimateGas(client, fromAddr, &toAddr, nil, nil)
-		if gasEstimateErr != nil {
-			return fmt.Errorf("failed to estimate gas: %v", gasEstimateErr)
+	// Handle gas limit
+	if gasLimit == 0 {
+		if !dryRun {
+			// For actual transactions, estimate gas if no limit is provided
+			fromAddr := common.HexToAddress(fromAddress)
+			toAddr := common.HexToAddress(to)
+			contractAddr := common.HexToAddress(tokenAddress)
+
+			// Create ERC721 transferFrom function call data
+			transferFnSignature := crypto.Keccak256Hash([]byte(util.ERC721TransferFromSignature)).Bytes()[:4]
+			paddedFromAddress := common.LeftPadBytes(fromAddr.Bytes(), 32)
+			paddedToAddress := common.LeftPadBytes(toAddr.Bytes(), 32)
+			paddedTokenID := common.LeftPadBytes(tokenID.Bytes(), 32)
+
+			// Combine data
+			var data []byte
+			data = append(data, transferFnSignature...)
+			data = append(data, paddedFromAddress...)
+			data = append(data, paddedToAddress...)
+			data = append(data, paddedTokenID...)
+
+			var gasEstimateErr error
+			gasLimit, gasEstimateErr = util.EstimateGas(client, fromAddr, &contractAddr, nil, data)
+			if gasEstimateErr != nil {
+				return fmt.Errorf("failed to estimate gas: %v", gasEstimateErr)
+			}
+		} else {
+			// For dry run, use a default value
+			gasLimit = 150000 // Default gas limit for ERC721 transfers
 		}
-	} else if gasLimit == 0 {
-		gasLimit = 100000 // Default gas limit for ERC721 transfers
 	}
 
-	// Create raw transaction
+	// Create transaction with the determined gas limit
 	rawTx, err := util.CreateERC721TransferTx(
 		fromAddress,
 		tokenAddress,
@@ -205,63 +224,6 @@ func runTransferERC721(cmd *cobra.Command, args []string) error {
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create transaction: %v", err)
-	}
-
-	// Estimate gas if needed
-	if gasLimit == 0 && !dryRun {
-		// Decode the transaction to get tx data
-		txData, decodeErr := hexutil.Decode(rawTx)
-		if decodeErr != nil {
-			return fmt.Errorf("decode transaction failed: %v", decodeErr)
-		}
-
-		var tx types.Transaction
-		unmarshalErr := tx.UnmarshalBinary(txData)
-		if unmarshalErr != nil {
-			return fmt.Errorf("unmarshal transaction failed: %v", unmarshalErr)
-		}
-
-		fromAddr := common.HexToAddress(fromAddress)
-		toAddr := *tx.To()
-		var gasEstimateErr error
-		gasLimit, gasEstimateErr = util.EstimateGas(client, fromAddr, &toAddr, tx.Value(), tx.Data())
-		if gasEstimateErr != nil {
-			return fmt.Errorf("failed to estimate gas: %v", gasEstimateErr)
-		}
-
-		// Recreate the transaction with the estimated gas limit
-		var recreateErr error
-		rawTx, recreateErr = util.CreateERC721TransferTx(
-			fromAddress,
-			tokenAddress,
-			to,
-			tokenID,
-			nonce,
-			gasPrice,
-			gasLimit,
-			chainID,
-		)
-		if recreateErr != nil {
-			return fmt.Errorf("failed to create transaction with estimated gas: %v", recreateErr)
-		}
-	} else if gasLimit == 0 {
-		gasLimit = 150000 // Default gas limit for ERC721 transfers
-
-		// Recreate the transaction with the default gas limit
-		var defaultGasErr error
-		rawTx, defaultGasErr = util.CreateERC721TransferTx(
-			fromAddress,
-			tokenAddress,
-			to,
-			tokenID,
-			nonce,
-			gasPrice,
-			gasLimit,
-			chainID,
-		)
-		if defaultGasErr != nil {
-			return fmt.Errorf("failed to create transaction with default gas: %v", defaultGasErr)
-		}
 	}
 
 	// If gas only, just display and exit
@@ -382,9 +344,10 @@ func getNFTName(client *ethclient.Client, contractAddress string) (string, error
 		return "NFT", nil
 	}
 
-	// Simple parsing: assuming result is a bytes32 string
+	// Parse the name using the same pattern as ERC20 symbol parsing
 	name := ""
 	if len(result) > 32 {
+		// Handle dynamic string
 		offset := new(big.Int).SetBytes(result[0:32]).Int64()
 		if offset < int64(len(result)) {
 			length := new(big.Int).SetBytes(result[offset : offset+32]).Int64()
@@ -394,7 +357,18 @@ func getNFTName(client *ethclient.Client, contractAddress string) (string, error
 			}
 		}
 	} else if len(result) > 0 {
-		name = string(result)
+		// Some older tokens return the name directly as bytes32
+		// Remove trailing zeros
+		i := 0
+		for i < len(result) && result[i] != 0 {
+			i++
+		}
+		name = string(result[:i])
+	}
+
+	// If we couldn't parse the name, return a default
+	if name == "" {
+		name = "NFT"
 	}
 
 	return name, nil

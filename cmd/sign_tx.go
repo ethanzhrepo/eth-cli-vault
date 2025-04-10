@@ -2,9 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/ethanzhrepo/eth-cli-wallet/util"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/spf13/cobra"
 )
 
@@ -114,10 +117,58 @@ func runSignTx(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("RPC URL is required for broadcasting")
 		}
 
-		// Ask for confirmation
-		fmt.Println("Transaction Details:")
-		fmt.Printf("From: %s\n", fromAddress)
-		fmt.Printf("Signed Transaction: %s...\n", signedTx[:66]+"...")
+		// Try to extract gas details from the raw transaction
+		txDetails := "Transaction Details:\n"
+		txDetails += fmt.Sprintf("From: %s\n", fromAddress)
+
+		// Try to decode the transaction to extract gas details
+		txData, decodeErr := hexutil.Decode(rawTxHex)
+		if decodeErr == nil {
+			var tx types.Transaction
+			unmarshalErr := tx.UnmarshalBinary(txData)
+			if unmarshalErr == nil {
+				// Display to address if available
+				if tx.To() != nil {
+					txDetails += fmt.Sprintf("To: %s\n", tx.To().Hex())
+				}
+
+				// Display value if it's not zero
+				if tx.Value().Cmp(big.NewInt(0)) > 0 {
+					ethAmount := new(big.Int).Div(tx.Value(), big.NewInt(1e18))
+					remainder := new(big.Int).Mod(tx.Value(), big.NewInt(1e18))
+					displayAmount := fmt.Sprintf("%d.%018d", ethAmount, remainder)
+					txDetails += fmt.Sprintf("Value: %s ETH\n", displayAmount)
+				}
+
+				// Display gas limit
+				txDetails += fmt.Sprintf("Gas Limit: %d\n", tx.Gas())
+
+				// Display gas price if available
+				gasPrice := tx.GasPrice()
+				if gasPrice != nil && gasPrice.Cmp(big.NewInt(0)) > 0 {
+					gasPriceGwei := new(big.Int).Div(gasPrice, big.NewInt(1e9))
+					gasPriceRemainder := new(big.Int).Mod(gasPrice, big.NewInt(1e9))
+					displayGasPrice := fmt.Sprintf("%d.%09d", gasPriceGwei, gasPriceRemainder)
+					txDetails += fmt.Sprintf("Gas Price: %s Gwei\n", displayGasPrice)
+
+					// Calculate and display gas fee
+					gasFee := new(big.Int).Mul(gasPrice, big.NewInt(int64(tx.Gas())))
+					gasFeeEth := new(big.Int).Div(gasFee, big.NewInt(1e18))
+					gasFeeRemainder := new(big.Int).Mod(gasFee, big.NewInt(1e18))
+					displayGasFee := fmt.Sprintf("%d.%018d", gasFeeEth, gasFeeRemainder)
+					txDetails += fmt.Sprintf("Gas Fee: %s ETH\n", displayGasFee)
+				}
+
+				// Display nonce
+				txDetails += fmt.Sprintf("Nonce: %d\n", tx.Nonce())
+			}
+		}
+
+		// Display truncated signed transaction
+		txDetails += fmt.Sprintf("Signed Transaction: %s...\n", signedTx[:66]+"...")
+
+		// Display transaction details and ask for confirmation
+		fmt.Println(txDetails)
 		fmt.Print("Broadcast this transaction? (y/N): ")
 		var response string
 		fmt.Scanln(&response)

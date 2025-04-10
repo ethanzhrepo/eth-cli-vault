@@ -9,8 +9,8 @@ import (
 
 	"github.com/ethanzhrepo/eth-cli-wallet/util"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/spf13/cobra"
 )
@@ -172,8 +172,8 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 		chainID = big.NewInt(int64(chainIDValue))
 		nonceValue, _ := cmd.Flags().GetUint64("nonce")
 
-		if chainIDValue != 1 && nonceValue == 0 {
-			return fmt.Errorf("--nonce is required when --chain-id is specified")
+		if dryRun && nonceValue == 0 {
+			return fmt.Errorf("--nonce is required when using --dry-run")
 		}
 
 		nonce = nonceValue
@@ -201,11 +201,29 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 	// Get gas limit
 	if gasLimit == 0 && !dryRun {
 		fromAddr := common.HexToAddress(fromAddress)
-		toAddr := common.HexToAddress(to)
+		contractAddr := common.HexToAddress(tokenAddress)
+		spenderAddr := common.HexToAddress(to)
+
+		// Create ERC20 approve function call data
+		approveFnSignature := crypto.Keccak256Hash([]byte(util.ERC20ApproveSignature)).Bytes()[:4]
+		paddedAddress := common.LeftPadBytes(spenderAddr.Bytes(), 32)
+		paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
+
+		// Combine data
+		var data []byte
+		data = append(data, approveFnSignature...)
+		data = append(data, paddedAddress...)
+		data = append(data, paddedAmount...)
+
 		var gasEstimateErr error
-		gasLimit, gasEstimateErr = util.EstimateGas(client, fromAddr, &toAddr, nil, nil)
+		gasLimit, gasEstimateErr = util.EstimateGas(client, fromAddr, &contractAddr, nil, data)
 		if gasEstimateErr != nil {
-			return fmt.Errorf("failed to estimate gas: %v", gasEstimateErr)
+			fmt.Printf("WARNING: Failed to estimate gas: %v\n", gasEstimateErr)
+			fmt.Printf("Using default gas limit for ERC20 approval\n")
+			gasLimit = 100000 // Default gas limit for ERC20 approvals
+		} else {
+			// Add a small buffer to ensure transaction success
+			gasLimit = uint64(float64(gasLimit) * 1.1)
 		}
 	} else if gasLimit == 0 {
 		gasLimit = 100000 // Default gas limit for ERC20 approvals
@@ -224,63 +242,6 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create transaction: %v", err)
-	}
-
-	// Estimate gas if needed
-	if gasLimit == 0 && !dryRun {
-		// Decode the transaction to get tx data
-		txData, decodeErr := hexutil.Decode(rawTx)
-		if decodeErr != nil {
-			return fmt.Errorf("decode transaction failed: %v", decodeErr)
-		}
-
-		var tx types.Transaction
-		unmarshalErr := tx.UnmarshalBinary(txData)
-		if unmarshalErr != nil {
-			return fmt.Errorf("unmarshal transaction failed: %v", unmarshalErr)
-		}
-
-		fromAddr := common.HexToAddress(fromAddress)
-		toAddr := *tx.To()
-		var gasEstimateErr error
-		gasLimit, gasEstimateErr = util.EstimateGas(client, fromAddr, &toAddr, tx.Value(), tx.Data())
-		if gasEstimateErr != nil {
-			return fmt.Errorf("failed to estimate gas: %v", gasEstimateErr)
-		}
-
-		// Recreate the transaction with the estimated gas limit
-		var recreateErr error
-		rawTx, recreateErr = util.CreateERC20ApproveTx(
-			fromAddress,
-			tokenAddress,
-			to,
-			amount,
-			nonce,
-			gasPrice,
-			gasLimit,
-			chainID,
-		)
-		if recreateErr != nil {
-			return fmt.Errorf("failed to create transaction with estimated gas: %v", recreateErr)
-		}
-	} else if gasLimit == 0 {
-		gasLimit = 60000 // Default gas limit for ERC20, slightly lower than transfer
-
-		// Recreate the transaction with the default gas limit
-		var defaultGasErr error
-		rawTx, defaultGasErr = util.CreateERC20ApproveTx(
-			fromAddress,
-			tokenAddress,
-			to,
-			amount,
-			nonce,
-			gasPrice,
-			gasLimit,
-			chainID,
-		)
-		if defaultGasErr != nil {
-			return fmt.Errorf("failed to create transaction with default gas: %v", defaultGasErr)
-		}
 	}
 
 	// If gas only, just display and exit
@@ -313,9 +274,10 @@ func runApproveERC20(cmd *cobra.Command, args []string) error {
 	// Display transaction details for confirmation
 	if !autoConfirm {
 		// Convert amount to token units for display
-		amountInt := new(big.Int).Div(amount, big.NewInt(1e18))
-		amountRemainder := new(big.Int).Mod(amount, big.NewInt(1e18))
-		displayAmount := fmt.Sprintf("%d.%018d", amountInt, amountRemainder)
+		decimalDivisor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(tokenDecimals)), nil)
+		amountInt := new(big.Int).Div(amount, decimalDivisor)
+		amountRemainder := new(big.Int).Mod(amount, decimalDivisor)
+		displayAmount := fmt.Sprintf("%d.%0*d", amountInt, tokenDecimals, amountRemainder)
 
 		// Convert gas price to Gwei
 		gasPriceGwei := new(big.Int).Div(gasPrice, big.NewInt(1e9))

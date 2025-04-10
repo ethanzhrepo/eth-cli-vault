@@ -61,6 +61,15 @@ func runApproveERC721(cmd *cobra.Command, args []string) error {
 	gasLimit, _ := cmd.Flags().GetUint64("gas-limit")
 	sync, _ := cmd.Flags().GetBool("sync")
 
+	// Validate addresses
+	if !common.IsHexAddress(to) {
+		return fmt.Errorf("invalid 'to' address format: %s", to)
+	}
+
+	if !common.IsHexAddress(tokenAddress) {
+		return fmt.Errorf("invalid token address format: %s", tokenAddress)
+	}
+
 	// Parse token ID
 	tokenID, ok := new(big.Int).SetString(tokenIDStr, 0) // 0 means auto-detect base
 	if !ok {
@@ -178,17 +187,9 @@ func runApproveERC721(cmd *cobra.Command, args []string) error {
 		gasPrice = big.NewInt(1000000000) // Default 1 Gwei if dry run
 	}
 
-	// Get gas limit
-	if gasLimit == 0 && !dryRun {
-		fromAddr := common.HexToAddress(fromAddress)
-		toAddr := common.HexToAddress(to)
-		var gasEstimateErr error
-		gasLimit, gasEstimateErr = util.EstimateGas(client, fromAddr, &toAddr, nil, nil)
-		if gasEstimateErr != nil {
-			return fmt.Errorf("failed to estimate gas: %v", gasEstimateErr)
-		}
-	} else if gasLimit == 0 {
-		gasLimit = 100000 // Default gas limit for ERC721 approvals
+	// Create raw transaction with initial gas limit
+	if gasLimit == 0 && dryRun {
+		gasLimit = 100000 // Default gas limit for ERC721 approvals in dry run mode
 	}
 
 	// Create raw transaction
@@ -206,7 +207,7 @@ func runApproveERC721(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create transaction: %v", err)
 	}
 
-	// Estimate gas if needed
+	// Estimate gas if needed (only for non-dry-run and when gasLimit is not provided)
 	if gasLimit == 0 && !dryRun {
 		// Decode the transaction to get tx data
 		txData, decodeErr := hexutil.Decode(rawTx)
@@ -242,24 +243,6 @@ func runApproveERC721(cmd *cobra.Command, args []string) error {
 		)
 		if recreateErr != nil {
 			return fmt.Errorf("failed to create transaction with estimated gas: %v", recreateErr)
-		}
-	} else if gasLimit == 0 {
-		gasLimit = 100000 // Default gas limit for ERC721 approval
-
-		// Recreate the transaction with the default gas limit
-		var defaultGasErr error
-		rawTx, defaultGasErr = util.CreateERC721ApproveTx(
-			fromAddress,
-			tokenAddress,
-			to,
-			tokenID,
-			nonce,
-			gasPrice,
-			gasLimit,
-			chainID,
-		)
-		if defaultGasErr != nil {
-			return fmt.Errorf("failed to create transaction with default gas: %v", defaultGasErr)
 		}
 	}
 
