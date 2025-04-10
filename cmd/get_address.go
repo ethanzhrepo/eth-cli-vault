@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -38,31 +37,32 @@ func GetAddressCmd() *cobra.Command {
 			// 判断输入位置是云存储还是本地文件
 			var walletData []byte
 			var err error
-			isCloudProvider := false
 
+			// Check if the provider is a cloud provider
+			isCloudProvider := false
 			for _, provider := range util.CLOUD_PROVIDERS {
 				if inputLocation == provider {
 					isCloudProvider = true
-					// 从云存储获取钱包文件
-					if walletName == "" {
-						fmt.Println("Error: --name parameter is required when using cloud storage")
-						cmd.Usage()
-						os.Exit(1)
-					}
-
-					cloudPath := filepath.Join(util.GetWalletDir(), walletName+".json")
-					walletData, err = util.Get(provider, cloudPath)
-					if err != nil {
-						fmt.Printf("Error loading wallet from %s: %v\n", provider, err)
-						os.Exit(1)
-					}
 					break
 				}
 			}
 
-			if !isCloudProvider {
+			if isCloudProvider {
+				// 从云存储获取钱包文件
+				if walletName == "" {
+					fmt.Println("Error: --name parameter is required when using cloud storage")
+					cmd.Usage()
+					os.Exit(1)
+				}
+
+				walletData, err = getWalletDataFromCloudProvider(inputLocation, walletName)
+				if err != nil {
+					fmt.Printf("Error loading wallet from %s: %v\n", inputLocation, err)
+					os.Exit(1)
+				}
+			} else {
 				// 从本地文件系统加载
-				walletData, err = util.Get(inputLocation, inputLocation)
+				walletData, err = getWalletDataFromLocalFile(inputLocation)
 				if err != nil {
 					fmt.Printf("Error loading wallet from local file: %v\n", err)
 					os.Exit(1)
@@ -118,7 +118,15 @@ func GetAddressCmd() *cobra.Command {
 			}
 
 			// 使用共用函数获取地址和私钥
-			addressHex, privateKeyBytes, err := getAddressFromMnemonic(mnemonic, passphrase)
+			// Determine which derivation path to use
+			derivationPath := ""
+			if wallet.DerivationPath != "" {
+				derivationPath = wallet.DerivationPath
+			} else if wallet.HDPath != "" {
+				derivationPath = wallet.HDPath
+			}
+
+			addressHex, privateKeyBytes, err := getAddressFromMnemonic(mnemonic, passphrase, derivationPath)
 			if err != nil {
 				fmt.Printf("Error generating address: %v\n", err)
 				os.Exit(1)

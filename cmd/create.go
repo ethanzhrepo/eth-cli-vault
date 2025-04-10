@@ -233,7 +233,7 @@ Examples:
 			}
 
 			// 获取钱包地址
-			addressHex, _, err := getAddressFromMnemonic(mnemonic, passphrase)
+			addressHex, _, err := getAddressFromMnemonic(mnemonic, passphrase, wallet.DerivationPath)
 			if err != nil {
 				fmt.Printf("Error generating address: %v\n", err)
 				os.Exit(1)

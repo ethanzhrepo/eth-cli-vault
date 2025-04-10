@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/term"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/crypto"
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/tyler-smith/go-bip39"
@@ -40,7 +41,7 @@ func initTxConfig() (string, error) {
 }
 
 // getAddressFromMnemonic derives Ethereum address from mnemonic and passphrase
-func getAddressFromMnemonic(mnemonic, passphrase string) (string, []byte, error) {
+func getAddressFromMnemonic(mnemonic, passphrase string, derivationPath string) (string, []byte, error) {
 	// Generate seed from mnemonic
 	seed := bip39.NewSeed(mnemonic, passphrase)
 
@@ -50,8 +51,17 @@ func getAddressFromMnemonic(mnemonic, passphrase string) (string, []byte, error)
 		return "", nil, fmt.Errorf("error creating HD wallet: %v", err)
 	}
 
-	// Use the standard Ethereum derivation path (m/44'/60'/0'/0/0)
+	// Use provided derivation path or default if empty
 	path := hdwallet.DefaultBaseDerivationPath
+	if derivationPath != "" {
+		var parsedPath accounts.DerivationPath
+		parsedPath, err = hdwallet.ParseDerivationPath(derivationPath)
+		if err != nil {
+			return "", nil, fmt.Errorf("error parsing derivation path: %v", err)
+		}
+		path = parsedPath
+	}
+
 	account, err := wallet.Derive(path, false)
 	if err != nil {
 		return "", nil, fmt.Errorf("error deriving account: %v", err)
@@ -69,14 +79,8 @@ func getAddressFromMnemonic(mnemonic, passphrase string) (string, []byte, error)
 	return address, crypto.FromECDSA(privateKey), nil
 }
 
-// getPrivateKeyFromLocalFile retrieves a private key from a local wallet file
-func getPrivateKeyFromLocalFile(filePath string) (string, string, error) {
-	// Load from local file system
-	walletData, err := util.Get(filePath, filePath)
-	if err != nil {
-		return "", "", fmt.Errorf("error loading wallet from local file: %v", err)
-	}
-
+// processWalletData processes wallet data to extract private key and address
+func processWalletData(walletData []byte) (string, string, error) {
 	// Parse wallet file
 	var wallet WalletFile
 	if err := json.Unmarshal(walletData, &wallet); err != nil {
@@ -114,7 +118,15 @@ func getPrivateKeyFromLocalFile(filePath string) (string, string, error) {
 		passphrase = string(passphraseBytes)
 	}
 
-	address, privateKeyBytes, err := getAddressFromMnemonic(mnemonic, passphrase)
+	// Determine which derivation path to use
+	derivationPath := ""
+	if wallet.DerivationPath != "" {
+		derivationPath = wallet.DerivationPath
+	} else if wallet.HDPath != "" {
+		derivationPath = wallet.HDPath
+	}
+
+	address, privateKeyBytes, err := getAddressFromMnemonic(mnemonic, passphrase, derivationPath)
 	if err != nil {
 		return "", "", err
 	}
@@ -125,78 +137,57 @@ func getPrivateKeyFromLocalFile(filePath string) (string, string, error) {
 	return privateKeyHex, address, nil
 }
 
+// getPrivateKeyFromLocalFile retrieves a private key from a local wallet file
+func getPrivateKeyFromLocalFile(filePath string) (string, string, error) {
+	// Load from local file system using the wrapper function
+	walletData, err := getWalletDataFromLocalFile(filePath)
+	if err != nil {
+		return "", "", fmt.Errorf("error loading wallet from local file: %v", err)
+	}
+
+	return processWalletData(walletData)
+}
+
 // getPrivateKeyFromProvider retrieves a private key from a provider
 func getPrivateKeyFromProvider(provider string, name string) (string, string, error) {
-	// 判断输入是云存储还是本地文件
-	var walletData []byte
-	var err error
+	// Check if the provider is a cloud provider
 	isCloudProvider := false
-
 	for _, p := range util.CLOUD_PROVIDERS {
 		if provider == p {
 			isCloudProvider = true
-			// 从云存储获取钱包文件
-			cloudPath := filepath.Join(util.GetWalletDir(), name+".json")
-			walletData, err = util.Get(provider, cloudPath)
-			if err != nil {
-				return "", "", fmt.Errorf("error loading wallet from %s: %v", provider, err)
-			}
 			break
 		}
 	}
 
-	if !isCloudProvider {
-		// 从本地文件系统加载
-		walletData, err = util.Get(provider, provider)
+	var walletData []byte
+	var err error
+
+	if isCloudProvider {
+		// Get from cloud provider using the wrapper function
+		walletData, err = getWalletDataFromCloudProvider(provider, name)
+		if err != nil {
+			return "", "", fmt.Errorf("error loading wallet from %s: %v", provider, err)
+		}
+	} else {
+		// Treat as local file
+		walletData, err = getWalletDataFromLocalFile(provider)
 		if err != nil {
 			return "", "", fmt.Errorf("error loading wallet from local file: %v", err)
 		}
 	}
 
-	// 解析钱包文件
-	var wallet WalletFile
-	if err := json.Unmarshal(walletData, &wallet); err != nil {
-		return "", "", fmt.Errorf("error parsing wallet file: %v", err)
-	}
+	return processWalletData(walletData)
+}
 
-	// 获取密码
-	fmt.Print("Please Enter \033[1;31mAES\033[0m Password: ")
-	passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		return "", "", fmt.Errorf("error reading password: %v", err)
-	}
-	fmt.Println()
-	password := string(passwordBytes)
+// getWalletDataFromLocalFile retrieves wallet data from a local file
+func getWalletDataFromLocalFile(filePath string) ([]byte, error) {
+	// This is a wrapper around util.Get for better API clarity
+	return util.Get(filePath, filePath)
+}
 
-	// 解密助记词
-	mnemonic, err := util.DecryptMnemonic(wallet.EncryptedMnemonic, password)
-	if err != nil {
-		return "", "", fmt.Errorf("error decrypting mnemonic: %v", err)
-	}
-
-	// 询问是否使用了passphrase
-	fmt.Print("Did you use a BIP39 passphrase for this wallet? (y/n): ")
-	var answer string
-	fmt.Scanln(&answer)
-
-	var passphrase string
-	if strings.ToLower(answer) == "y" || strings.ToLower(answer) == "yes" {
-		fmt.Print("Please Enter \033[1;31mBIP39\033[0m Passphrase: ")
-		passphraseBytes, err := term.ReadPassword(int(syscall.Stdin))
-		if err != nil {
-			return "", "", fmt.Errorf("error reading passphrase: %v", err)
-		}
-		fmt.Println()
-		passphrase = string(passphraseBytes)
-	}
-
-	address, privateKeyBytes, err := getAddressFromMnemonic(mnemonic, passphrase)
-	if err != nil {
-		return "", "", err
-	}
-
-	// 获取私钥的十六进制字符串表示
-	privateKeyHex := fmt.Sprintf("%x", privateKeyBytes)
-
-	return privateKeyHex, address, nil
+// getWalletDataFromCloudProvider retrieves wallet data from a cloud provider
+func getWalletDataFromCloudProvider(provider string, name string) ([]byte, error) {
+	// This is a wrapper around util.Get for cloud providers
+	cloudPath := filepath.Join(util.GetWalletDir(), name+".json")
+	return util.Get(provider, cloudPath)
 }
