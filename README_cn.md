@@ -58,7 +58,7 @@
 ```bash
 # 从发布页面下载最新版本
 # macOS系统 (Apple Silicon)
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.4/eth-cli-0.1.4-darwin-Silicon
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.4/eth-cli-0.1.4-macos-Silicon
 chmod +x eth-cli
 
 # Linux系统 (x64/amd64)
@@ -94,7 +94,7 @@ make
 
 # 编译好的二进制文件将位于release目录中
 # 您可以复制适合您系统的二进制文件
-cp release/eth-cli-0.1.3-darwin-Silicon eth-cli  # 适用于macOS Apple Silicon
+cp release/eth-cli-0.1.3-macos-Silicon eth-cli  # 适用于macOS Apple Silicon
 # 或者
 cp release/eth-cli-0.1.3-linux-amd64 eth-cli  # 适用于Linux
 ```

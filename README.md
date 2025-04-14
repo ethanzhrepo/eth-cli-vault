@@ -55,7 +55,7 @@ Always keep multiple backups of your encrypted wallet files and ensure you never
 ```bash
 # Download the latest release from the releases page
 # For macOS (Apple Silicon)
-curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.4/eth-cli-0.1.4-darwin-Silicon
+curl -L -o eth-cli https://github.com/ethanzhrepo/eth-cli-vault/releases/download/v0.1.4/eth-cli-0.1.4-macos-Silicon
 chmod +x eth-cli
 
 # For Linux (x64/amd64)
@@ -91,7 +91,7 @@ make
 
 # The compiled binaries will be in the release directory
 # You can copy the appropriate binary for your system
-cp release/eth-cli-0.1.4-darwin-Silicon eth-cli  # For macOS Apple Silicon
+cp release/eth-cli-0.1.4-macos-Silicon eth-cli  # For macOS Apple Silicon
 # or
 cp release/eth-cli-0.1.4-linux-amd64 eth-cli  # For Linux
 ```
