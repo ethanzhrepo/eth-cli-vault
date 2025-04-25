@@ -47,6 +47,9 @@ Always keep multiple backups of your encrypted wallet files and ensure you never
 - **Apple Keychain storage support** - available as a storage option on macOS systems
 - **No server component** - all OAuth token exchanges, cloud storage connections, and authorization processes happen solely on your local machine without any external server involvement. This program is fully client-side and will never have any server component.
 
+## Screen
+
+![Screen Get](assets/screen_get.png)
 
 ## Installation
 

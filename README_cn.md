@@ -51,6 +51,10 @@
  - [x] 增加Apple密钥链（Keychain）支持，作为 macOS 系统上的可选存储方式
  - [ ] 阿里云oss、百度盘支持
 
+## 图片
+
+![Screen Get](assets/screen_get.png)
+
 ## 安装
 
 ### 二进制安装（最简单）
