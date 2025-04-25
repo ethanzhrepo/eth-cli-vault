@@ -132,6 +132,10 @@ func GetAddressCmd() *cobra.Command {
 				os.Exit(1)
 			}
 
+			// 显示二维码
+			qrCode := util.GenerateQRCode(addressHex)
+			fmt.Printf("%s\n", qrCode)
+
 			// 输出地址
 			fmt.Printf("Wallet Address: \033[1;32m%s\033[0m\n", addressHex)
 
