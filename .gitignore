@@ -7,3 +7,5 @@ eth-cli-wallet
 test.sh
 .DS_Store
 release
+.vscode
+eip7702tookit

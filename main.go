@@ -65,6 +65,7 @@ Author: https://x.com/0x99_Ethan`,
 	rootCmd.AddCommand(cmd.ConfigCmd())
 	rootCmd.AddCommand(cmd.GasPriceCmd())
 	rootCmd.AddCommand(cmd.CreateCmd())
+	rootCmd.AddCommand(cmd.CreateSpecialCmd())
 	rootCmd.AddCommand(cmd.GetAddressCmd())
 	rootCmd.AddCommand(cmd.ListCmd())
 	rootCmd.AddCommand(cmd.CopyCmd())

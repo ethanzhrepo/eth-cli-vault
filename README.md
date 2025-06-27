@@ -185,6 +185,48 @@ When creating a wallet:
 
 This encryption configuration requires significant computational resources to attempt breaking, making it practically impossible to access your wallet without the correct passwords, even with advanced hardware.
 
+## Creating Vanity Address Wallets
+
+The `create-special` command allows you to generate wallets with vanity addresses that match specific patterns using regular expressions. This process can take considerable time depending on the complexity of your pattern.
+
+```bash
+# Generate vanity address with pattern saved to cloud storage
+./eth-cli create-special --pattern "^0x999[a-fA-F0-9]+999$" --output google,dropbox --name myVanityWallet [--force]
+
+# Generate vanity address saved to local file
+./eth-cli create-special --pattern "^0x999999[a-fA-F0-9]+999999$" --output fs --path /tmp/vanity_wallet.json [--force]
+
+# Generate vanity address with multiple outputs and display mnemonic during generation
+./eth-cli create-special --pattern "^0x[aA]+[0-9]{10}" --output google,dropbox,keychain --name myVanityWallet --display-mnemonic [--force]
+```
+
+**Command Options:**
+- `--pattern` (required): Regular expression pattern to match the desired address format
+- `--output` (required): Output location(s) - use 'fs' for local file, or comma-separated cloud providers
+- `--name`: Name of the wallet file (required except when using `--output fs`)
+- `--path`: File path for wallet when using `--output fs`
+- `--display-mnemonic`: Show the mnemonic phrase when a matching address is found
+- `--force`: Overwrite existing wallet files
+
+**Pattern Examples:**
+- `^0x999[a-fA-F0-9]+999$` - Address starting with 999 and ending with 999
+- `^0x999999[a-fA-F0-9]+999999$` - Address starting and ending with 999999
+- `^0x[aA]+[0-9]{10}` - Address starting with multiple A's followed by 10 digits
+- `^0x[0-9]{8}` - Address starting with 8 digits
+
+**Important Security Notes for Vanity Addresses:**
+- ⚠️ **Passphrase is automatically set to empty** for vanity address generation to ensure address consistency
+- The vanity generation process may take a very long time (hours to days) for complex patterns
+- You can press Ctrl+C to cancel the generation at any time
+- The wallet will still require a strong AES encryption password for file security
+- Test your vanity wallet with the `get` command before using it for transactions
+
+**Performance Considerations:**
+- Simple patterns (4-6 specific characters) may take minutes to hours
+- Complex patterns (8+ specific characters) may take days or weeks
+- The more specific your pattern, the exponentially longer it will take
+- Consider starting with simpler patterns to test the functionality
+
 ## Managing Wallets
 
 ```bash
