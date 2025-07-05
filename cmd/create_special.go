@@ -118,10 +118,52 @@ Warning: Generating vanity addresses can take a very long time depending on the 
 				}
 			}
 
+			// 询问用户是否要设置BIP39 passphrase
+			fmt.Println("\nDo you want to set a \033[1;31mBIP39 Passphrase\033[0m for extra security?")
+			fmt.Println("The passphrase will be used to encrypt your \033[1;31mmnemonic\033[0m.")
+			fmt.Println("If you forget it, you will not be able to recover your wallet.")
+			fmt.Println("If you choose not to set a passphrase, your wallet will use an empty passphrase.")
+			fmt.Print("Set BIP39 Passphrase? (y/n): ")
+
+			var answer string
+			fmt.Scanln(&answer)
+
+			var passphrase string
+			if strings.ToLower(answer) == "y" || strings.ToLower(answer) == "yes" {
+				fmt.Println("\nPlease enter \033[1;31mBIP39 Passphrase\033[0m for extra security.")
+				fmt.Println("It is recommended to use a strong passphrase: \033[1;31m8 characters or more, including uppercase, lowercase, numbers, and special characters\033[0m.")
+				fmt.Println("Example: MyPassphrase123!")
+				fmt.Println()
+
+				fmt.Print("Please Enter BIP39 Passphrase: ")
+				passphraseBytes, err := term.ReadPassword(int(syscall.Stdin))
+				if err != nil {
+					fmt.Printf("\nError reading passphrase: %v\n", err)
+					os.Exit(1)
+				}
+				fmt.Print("\nPlease Re-Enter BIP39 Passphrase: ")
+				confirmPassphraseBytes, err := term.ReadPassword(int(syscall.Stdin))
+				if err != nil {
+					fmt.Printf("\nError reading passphrase confirmation: %v\n", err)
+					os.Exit(1)
+				}
+				fmt.Println()
+
+				if string(passphraseBytes) != string(confirmPassphraseBytes) {
+					fmt.Println("Error: Passphrases do not match")
+					os.Exit(1)
+				}
+				passphrase = string(passphraseBytes)
+				fmt.Println("BIP39 Passphrase set successfully.")
+			} else {
+				fmt.Println("BIP39 Passphrase not set (using empty passphrase).")
+				passphrase = ""
+			}
+
 			// 开始生成靓号地址
 			fmt.Printf("\n\033[1;33mSearching for vanity address matching pattern: %s\033[0m\n", pattern)
 			fmt.Println("This may take a while depending on the complexity of your pattern...")
-			fmt.Println("\033[1;31mNote: Passphrase will be set to empty for vanity address generation to ensure address consistency.\033[0m")
+			fmt.Printf("\033[1;31mNote: Using %s passphrase for vanity address generation.\033[0m\n", map[bool]string{true: "set", false: "empty"}[passphrase != ""])
 			fmt.Println("Press Ctrl+C to cancel at any time.\n")
 
 			var mnemonic string
@@ -144,8 +186,8 @@ Warning: Generating vanity addresses can take a very long time depending on the 
 					continue
 				}
 
-				// 生成地址（使用空的passphrase进行初步检查）
-				tempAddressHex, _, err := getAddressFromMnemonic(tempMnemonic, "", "m/44'/60'/0'/0/0")
+				// 生成地址（使用用户设定的passphrase进行检查）
+				tempAddressHex, _, err := getAddressFromMnemonic(tempMnemonic, passphrase, "m/44'/60'/0'/0/0")
 				if err != nil {
 					continue
 				}
@@ -218,10 +260,6 @@ Warning: Generating vanity addresses can take a very long time depending on the 
 				fmt.Println("Error: Password is not strong enough. It must be at least 8 characters and include uppercase, lowercase, numbers, and special characters.")
 				os.Exit(1)
 			}
-
-			// 设置空的passphrase以确保地址一致性
-			var passphrase string = ""
-			fmt.Println("\n\033[1;33mUsing empty passphrase for vanity address generation to ensure address consistency.\033[0m")
 
 			// 重新生成地址以确保使用用户提供的passphrase
 			finalAddressHex, _, err := getAddressFromMnemonic(mnemonic, passphrase, "m/44'/60'/0'/0/0")

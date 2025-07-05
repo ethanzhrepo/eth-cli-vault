@@ -136,37 +136,48 @@ Examples:
 				os.Exit(1)
 			}
 
-			// 如果需要passphrase，则从用户那里获取
+			// 询问用户是否要设置BIP39 passphrase
 			var passphrase string
 			if !withPassphrase {
-				fmt.Println("\nPlease enter \033[1;31mBIP39 Passphrase\033[0m for extra security.")
-				fmt.Println("This passphrase will be used to encrypt your \033[1;31mmnemonic\033[0m.")
+				fmt.Println("\nDo you want to set a \033[1;31mBIP39 Passphrase\033[0m for extra security?")
+				fmt.Println("The passphrase will be used to encrypt your \033[1;31mmnemonic\033[0m.")
 				fmt.Println("If you forget it, you will not be able to recover your wallet.")
-				fmt.Println("Please enter it carefully.")
-				fmt.Println("It is recommended to use a strong passphrase: \033[1;31m8 characters or more, including uppercase, lowercase, numbers, and special characters\033[0m.")
-				fmt.Println("Example: MyPassphrase123!")
-				fmt.Println("If you don't want to use a passphrase, exit and run the command again with the \033[1;31m--without-passphrase\033[0m flag.")
-				fmt.Println()
+				fmt.Println("If you choose not to set a passphrase, your wallet will use an empty passphrase.")
+				fmt.Print("Set BIP39 Passphrase? (y/n): ")
 
-				fmt.Print("Please Enter BIP39 Passphrase: ")
-				passphraseBytes, err := term.ReadPassword(int(syscall.Stdin))
-				if err != nil {
-					fmt.Printf("\nError reading passphrase: %v\n", err)
-					os.Exit(1)
-				}
-				fmt.Print("\nPlease ReEnter BIP39 Passphrase: ")
-				confirmPassphraseBytes, err := term.ReadPassword(int(syscall.Stdin))
-				if err != nil {
-					fmt.Printf("\nError reading passphrase confirmation: %v\n", err)
-					os.Exit(1)
-				}
-				fmt.Println()
+				var answer string
+				fmt.Scanln(&answer)
 
-				if string(passphraseBytes) != string(confirmPassphraseBytes) {
-					fmt.Println("Error: Passphrases do not match")
-					os.Exit(1)
+				if strings.ToLower(answer) == "y" || strings.ToLower(answer) == "yes" {
+					fmt.Println("\nPlease enter \033[1;31mBIP39 Passphrase\033[0m for extra security.")
+					fmt.Println("It is recommended to use a strong passphrase: \033[1;31m8 characters or more, including uppercase, lowercase, numbers, and special characters\033[0m.")
+					fmt.Println("Example: MyPassphrase123!")
+					fmt.Println()
+
+					fmt.Print("Please Enter BIP39 Passphrase: ")
+					passphraseBytes, err := term.ReadPassword(int(syscall.Stdin))
+					if err != nil {
+						fmt.Printf("\nError reading passphrase: %v\n", err)
+						os.Exit(1)
+					}
+					fmt.Print("\nPlease Re-Enter BIP39 Passphrase: ")
+					confirmPassphraseBytes, err := term.ReadPassword(int(syscall.Stdin))
+					if err != nil {
+						fmt.Printf("\nError reading passphrase confirmation: %v\n", err)
+						os.Exit(1)
+					}
+					fmt.Println()
+
+					if string(passphraseBytes) != string(confirmPassphraseBytes) {
+						fmt.Println("Error: Passphrases do not match")
+						os.Exit(1)
+					}
+					passphrase = string(passphraseBytes)
+					fmt.Println("BIP39 Passphrase set successfully.")
+				} else {
+					fmt.Println("BIP39 Passphrase not set (using empty passphrase).")
+					passphrase = ""
 				}
-				passphrase = string(passphraseBytes)
 			}
 
 			// 生成BIP39助记词
